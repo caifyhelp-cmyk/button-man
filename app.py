@@ -31,9 +31,34 @@ def health_check():
     return jsonify({'ok': True})
 
 
+@app.route('/health/db')
+def health_db():
+    return jsonify(db.db_status())
+
+
 @app.route('/')
 def dashboard():
-    return render_template('dashboard.html')
+    return render_template('dashboard.html', active='dashboard')
+
+
+@app.route('/data')
+def page_data():
+    return render_template('data.html', active='data')
+
+
+@app.route('/activity')
+def page_activity():
+    return render_template('activity.html', active='activity')
+
+
+@app.route('/analytics')
+def page_analytics():
+    return render_template('analytics.html', active='analytics')
+
+
+@app.route('/settings')
+def page_settings():
+    return render_template('settings.html', active='settings')
 
 
 if __name__ == '__main__':
