@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>📲 button-man — {% block title %}대시보드{% endblock %}</title>
+  <title>📲 button-man — {% block title %}아이디어뱅크{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📲%3C/text%3E%3C/svg%3E" />
 </head>
@@ -15,33 +15,25 @@
         <span class="font-semibold tracking-tight">button-man</span>
       </div>
       <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
-        {% set nav_items = [
-          ('dashboard', '대시보드', '/'),
-          ('data', '데이터', '/data'),
-          ('activity', '활동', '/activity'),
-          ('analytics', '분석', '/analytics'),
-          ('settings', '설정', '/settings')
-        ] %}
-        {% for key, label, href in nav_items %}
-          {% if key == active %}
-            <a href="{{ href }}" class="block rounded-md px-3 py-2 bg-slate-100 text-slate-900 font-medium">{{ label }}</a>
-          {% else %}
-            <a href="{{ href }}" class="block rounded-md px-3 py-2 text-slate-600 hover:bg-slate-100">{{ label }}</a>
-          {% endif %}
-        {% endfor %}
+        {% if active == 'ideas' %}
+          <a href="/" class="block rounded-md px-3 py-2 bg-slate-100 text-slate-900 font-medium">아이디어뱅크</a>
+        {% else %}
+          <a href="/" class="block rounded-md px-3 py-2 text-slate-600 hover:bg-slate-100">아이디어뱅크</a>
+        {% endif %}
+        <span class="block rounded-md px-3 py-2 text-slate-400 cursor-not-allowed">실행 이력 <span class="ml-1 text-[10px] uppercase tracking-wider text-slate-300">준비중</span></span>
+        <span class="block rounded-md px-3 py-2 text-slate-400 cursor-not-allowed">설정 <span class="ml-1 text-[10px] uppercase tracking-wider text-slate-300">준비중</span></span>
       </nav>
-      <div class="px-5 py-4 text-xs text-slate-400 border-t border-slate-200">v0.1.0 · MVP</div>
+      <div class="px-5 py-4 text-xs text-slate-400 border-t border-slate-200">v0.2.0 · MVP</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0">
       <header class="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
         <div class="flex items-center gap-2">
           <span class="md:hidden text-2xl leading-none">📲</span>
-          <h1 class="text-lg font-semibold tracking-tight">{% block page_title %}대시보드{% endblock %}</h1>
+          <h1 class="text-lg font-semibold tracking-tight">{% block page_title %}아이디어뱅크{% endblock %}</h1>
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-sm text-slate-500">caifyhelp@gmail.com</span>
-          <div class="h-8 w-8 rounded-full bg-slate-200"></div>
+          <span class="text-sm text-slate-500">소상공인 대시보드 MVP</span>
         </div>
       </header>
 

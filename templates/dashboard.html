@@ -1,55 +1,115 @@
 {% extends "_base.html" %}
-{% block title %}대시보드{% endblock %}
-{% block page_title %}대시보드{% endblock %}
+{% block title %}아이디어뱅크{% endblock %}
+{% block page_title %}아이디어뱅크{% endblock %}
 {% block content %}
-<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-  {% for i in range(4) %}
-  <div class="rounded-xl border border-slate-200 bg-white p-5">
-    <div class="text-xs font-medium text-slate-500">지표 {{ i + 1 }}</div>
-    <div class="mt-2 text-2xl font-semibold tabular-nums">—</div>
-    <div class="mt-1 text-xs text-slate-400">설명 자리</div>
+{% set difficulty_labels = {'easy': '쉬움', 'medium': '보통', 'hard': '어려움'} %}
+{% set difficulty_styles = {'easy': 'bg-emerald-50 text-emerald-700 border-emerald-200', 'medium': 'bg-amber-50 text-amber-700 border-amber-200', 'hard': 'bg-rose-50 text-rose-700 border-rose-200'} %}
+
+<section class="flex items-start justify-between">
+  <div>
+    <h2 class="text-sm font-semibold text-slate-700">테스트 가능한 아이디어 {{ ideas|length }}개</h2>
+    <p class="mt-1 text-xs text-slate-500">버튼을 눌러 mock 실행 결과를 확인하세요. 실제 연동은 추후 작업.</p>
   </div>
+</section>
+
+<section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+  {% for idea in ideas %}
+  <article class="flex flex-col rounded-xl border border-slate-200 bg-white p-5">
+    <div class="flex items-start justify-between gap-3">
+      <h3 class="text-base font-semibold tracking-tight">{{ idea.title }}</h3>
+      <span class="shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium {{ difficulty_styles.get(idea.difficulty, 'bg-slate-50 text-slate-600 border-slate-200') }}">
+        {{ difficulty_labels.get(idea.difficulty, idea.difficulty) }}
+      </span>
+    </div>
+    <p class="mt-2 text-sm text-slate-600 leading-relaxed">{{ idea.description }}</p>
+    <dl class="mt-4 space-y-1 text-xs">
+      <div class="flex gap-2">
+        <dt class="shrink-0 text-slate-400 w-20">예상 사용자</dt>
+        <dd class="text-slate-700">{{ idea.target_user }}</dd>
+      </div>
+      <div class="flex gap-2">
+        <dt class="shrink-0 text-slate-400 w-20">테스트 난이도</dt>
+        <dd class="text-slate-700">{{ difficulty_labels.get(idea.difficulty, idea.difficulty) }}</dd>
+      </div>
+    </dl>
+    <div class="mt-5 pt-4 border-t border-slate-100">
+      <button
+        type="button"
+        class="run-btn w-full rounded-md bg-slate-900 text-white text-sm font-medium px-4 py-2 hover:bg-slate-800 transition-colors"
+        data-idea-id="{{ idea.id }}"
+        data-idea-title="{{ idea.title }}"
+      >📲 테스트 실행</button>
+    </div>
+  </article>
   {% endfor %}
 </section>
 
-<section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-  <div class="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-5 min-h-[280px]">
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="text-sm font-semibold">패널 A</h2>
-      <span class="text-xs text-slate-400">—</span>
+<!-- 결과 모달 -->
+<div id="result-modal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-slate-900/60" data-modal-close></div>
+  <div class="absolute inset-0 flex items-start justify-center p-4 pointer-events-none">
+    <div class="pointer-events-auto mt-16 w-full max-w-xl rounded-xl bg-white shadow-xl border border-slate-200">
+      <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+        <h3 class="text-base font-semibold" id="modal-title">실행 결과</h3>
+        <button type="button" class="text-slate-400 hover:text-slate-700" data-modal-close aria-label="닫기">✕</button>
+      </div>
+      <div class="px-5 py-4 space-y-3">
+        <div id="modal-status" class="text-xs font-medium"></div>
+        <div id="modal-summary" class="text-sm text-slate-700"></div>
+        <pre id="modal-result" class="rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-700 p-3 overflow-x-auto max-h-72"></pre>
+      </div>
+      <div class="border-t border-slate-100 px-5 py-3 flex justify-end">
+        <button type="button" class="rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50" data-modal-close>닫기</button>
+      </div>
     </div>
-    <div class="text-sm text-slate-400">콘텐츠 자리</div>
   </div>
-  <div class="rounded-xl border border-slate-200 bg-white p-5 min-h-[280px]">
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="text-sm font-semibold">패널 B</h2>
-      <span class="text-xs text-slate-400">—</span>
-    </div>
-    <div class="text-sm text-slate-400">콘텐츠 자리</div>
-  </div>
-</section>
+</div>
 
-<section class="rounded-xl border border-slate-200 bg-white p-5">
-  <div class="flex items-center justify-between mb-3">
-    <h2 class="text-sm font-semibold">목록</h2>
-    <span class="text-xs text-slate-400">—</span>
-  </div>
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead class="text-left text-xs uppercase tracking-wider text-slate-500 border-b border-slate-200">
-        <tr>
-          <th class="py-2 pr-4 font-medium">컬럼 1</th>
-          <th class="py-2 pr-4 font-medium">컬럼 2</th>
-          <th class="py-2 pr-4 font-medium">컬럼 3</th>
-          <th class="py-2 pr-4 font-medium">컬럼 4</th>
-        </tr>
-      </thead>
-      <tbody class="text-slate-700">
-        <tr class="border-b border-slate-100">
-          <td class="py-3 pr-4 text-slate-400" colspan="4">데이터 자리</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</section>
+<script>
+(function(){
+  const modal = document.getElementById('result-modal');
+  const titleEl = document.getElementById('modal-title');
+  const statusEl = document.getElementById('modal-status');
+  const summaryEl = document.getElementById('modal-summary');
+  const resultEl = document.getElementById('modal-result');
+
+  function open(){ modal.classList.remove('hidden'); }
+  function close(){ modal.classList.add('hidden'); }
+
+  document.querySelectorAll('[data-modal-close]').forEach(el => el.addEventListener('click', close));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+  document.querySelectorAll('.run-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.ideaId;
+      const title = btn.dataset.ideaTitle;
+      titleEl.textContent = title + ' · 실행 결과';
+      statusEl.textContent = '실행 중...';
+      statusEl.className = 'text-xs font-medium text-slate-500';
+      summaryEl.textContent = '';
+      resultEl.textContent = '';
+      open();
+
+      try {
+        const res = await fetch(`/api/ideas/${id}/run`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}'
+        });
+        const data = await res.json();
+        const ok = res.ok && data.status !== 'not_found';
+        statusEl.textContent = ok ? `✓ ${data.status}` : `✗ ${data.status || res.status}`;
+        statusEl.className = 'text-xs font-medium ' + (ok ? 'text-emerald-600' : 'text-rose-600');
+        summaryEl.textContent = data.sample_output && data.sample_output.summary ? data.sample_output.summary : (data.message || '');
+        resultEl.textContent = JSON.stringify(data, null, 2);
+      } catch (e) {
+        statusEl.textContent = '✗ 네트워크 오류';
+        statusEl.className = 'text-xs font-medium text-rose-600';
+        summaryEl.textContent = e.message;
+        resultEl.textContent = '';
+      }
+    });
+  });
+})();
+</script>
 {% endblock %}

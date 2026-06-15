@@ -2,10 +2,10 @@
 import os
 import traceback
 
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
 
-import db
+import actions
 
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
@@ -20,45 +20,23 @@ def _handle_all_exceptions(e):
     return jsonify({'error': str(e), 'type': type(e).__name__}), 500
 
 
-try:
-    db.init_db()
-except Exception as e:
-    print(f'[DB] init skipped: {e}')
-
-
 @app.route('/health')
 def health_check():
     return jsonify({'ok': True})
 
 
-@app.route('/health/db')
-def health_db():
-    return jsonify(db.db_status())
-
-
 @app.route('/')
 def dashboard():
-    return render_template('dashboard.html', active='dashboard')
+    ideas = actions.load_ideas()
+    return render_template('dashboard.html', ideas=ideas, active='ideas')
 
 
-@app.route('/data')
-def page_data():
-    return render_template('data.html', active='data')
-
-
-@app.route('/activity')
-def page_activity():
-    return render_template('activity.html', active='activity')
-
-
-@app.route('/analytics')
-def page_analytics():
-    return render_template('analytics.html', active='analytics')
-
-
-@app.route('/settings')
-def page_settings():
-    return render_template('settings.html', active='settings')
+@app.route('/api/ideas/<idea_id>/run', methods=['POST'])
+def api_run(idea_id):
+    payload = request.get_json(silent=True) or {}
+    result = actions.run_idea(idea_id, payload)
+    status = 404 if result.get('status') == 'not_found' else 200
+    return jsonify(result), status
 
 
 if __name__ == '__main__':

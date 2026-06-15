@@ -1,0 +1,46 @@
+{
+  "ideas": [
+    {
+      "id": "review-auto-reply",
+      "title": "리뷰 자동 답글",
+      "description": "네이버/구글 리뷰가 등록되면 매장 톤에 맞춘 정중한 답글을 자동으로 작성합니다.",
+      "target_user": "카페·식당·미용실 등 리뷰가 자주 달리는 매장",
+      "difficulty": "easy"
+    },
+    {
+      "id": "regular-customer-ping",
+      "title": "단골 고객 알림 메시지",
+      "description": "6개월 이상 방문 기록이 없는 단골에게 자동 카카오톡 알림 메시지를 발송합니다.",
+      "target_user": "단골 비중이 높은 동네 매장",
+      "difficulty": "easy"
+    },
+    {
+      "id": "daily-sales-summary",
+      "title": "일일 매출 요약 보고서",
+      "description": "매일 영업 종료 시각에 매출·객수·재방문율을 요약해 카카오톡으로 보냅니다.",
+      "target_user": "매장 운영자, 본사 관리자",
+      "difficulty": "medium"
+    },
+    {
+      "id": "inventory-low-alert",
+      "title": "재고 부족 자동 알림",
+      "description": "주요 재료/상품 재고가 임계치 이하로 떨어지면 즉시 알림을 보냅니다.",
+      "target_user": "식자재 매장, 소매업",
+      "difficulty": "medium"
+    },
+    {
+      "id": "competitor-price-watch",
+      "title": "경쟁사 가격 모니터링",
+      "description": "반경 1km 내 동일 업종의 대표 메뉴 가격 변동을 주 1회 추적해 리포트로 보냅니다.",
+      "target_user": "동네 카페, 음식점",
+      "difficulty": "hard"
+    },
+    {
+      "id": "sns-auto-post",
+      "title": "손님 후기 SNS 자동 게시",
+      "description": "신규 긍정 후기를 자동으로 골라 인스타·페이스북에 카드 이미지로 업로드합니다.",
+      "target_user": "SNS 마케팅이 필요한 매장",
+      "difficulty": "hard"
+    }
+  ]
+}
