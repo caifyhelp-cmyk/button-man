@@ -45,6 +45,40 @@
   <p class="text-sm text-slate-200">{{ idea.target_user }}</p>
 </section>
 
+<!-- 대상 플랫폼 선정 (조건부) -->
+{% if idea.target_platforms %}
+<section class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+  <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">대상 플랫폼 선정</div>
+  <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-200">
+    {% for p in idea.target_platforms %}
+    <li class="flex gap-2"><span class="text-slate-500">•</span><span>{{ p }}</span></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<!-- 구현 방식 후보 (조건부) -->
+{% if idea.implementation_options %}
+<section class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+  <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">구현 방식 후보</div>
+  <ul class="space-y-3">
+    {% for opt in idea.implementation_options %}
+    <li class="rounded-md border {{ 'border-emerald-800/60 bg-emerald-950/20' if opt.recommended else 'border-slate-800 bg-slate-950/40' }} p-3">
+      <div class="flex items-center gap-2">
+        <span class="text-sm font-medium text-slate-100">{{ opt.name }}</span>
+        {% if opt.recommended %}
+        <span class="inline-flex items-center rounded-full border border-emerald-700/70 bg-emerald-900/40 text-emerald-300 text-[10px] font-medium px-2 py-0.5 uppercase tracking-wider">1차 권장</span>
+        {% endif %}
+      </div>
+      {% if opt.note %}
+      <p class="mt-1.5 text-xs text-slate-400 leading-relaxed">{{ opt.note }}</p>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
 <!-- 필요 데이터 / 실제 연동 후보 -->
 <section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
   <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
@@ -64,6 +98,14 @@
     </ul>
   </div>
 </section>
+
+<!-- 최종 등록 흐름 (조건부) -->
+{% if idea.manual_finalization_note %}
+<section class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+  <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">최종 등록 흐름</div>
+  <p class="text-sm text-slate-200 leading-relaxed">{{ idea.manual_finalization_note }}</p>
+</section>
+{% endif %}
 
 <!-- mock 실행 결과 -->
 <section class="rounded-xl border border-slate-800 bg-slate-900 p-6">
@@ -89,10 +131,44 @@
       <ul id="result-steps" class="rounded-md border border-slate-800 bg-slate-950/60 p-3 space-y-1.5 text-sm text-slate-200"></ul>
       <p id="result-summary" class="mt-2 text-xs text-slate-400 leading-relaxed"></p>
     </div>
-    <div id="result-message-section">
+
+    <!-- Flow 흐름 (mock_flow 있을 때) -->
+    <div id="result-flow-section" class="hidden">
+      <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">감지 및 답글 초안 흐름</h4>
+      <div class="rounded-md border border-slate-800 bg-slate-950/60 p-4 space-y-4">
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">감지된 플랫폼</div>
+          <p id="flow-platform" class="mt-1 text-sm text-slate-100 font-medium"></p>
+        </div>
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">감지된 리뷰 원문</div>
+          <div class="mt-1 flex items-start gap-2">
+            <span id="flow-rating" class="text-amber-300 shrink-0 text-sm tracking-wide"></span>
+            <p id="flow-review" class="text-sm text-slate-100 leading-relaxed"></p>
+          </div>
+        </div>
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">답글 초안</div>
+          <p id="flow-draft" class="mt-1 text-sm text-slate-100 leading-relaxed"></p>
+        </div>
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">입력창 삽입 예정 문구</div>
+          <pre id="flow-insertion" class="mt-1 rounded-md border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 whitespace-pre-wrap font-mono leading-relaxed"></pre>
+        </div>
+        <div>
+          <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">사장님 선택 (시연 표시)</div>
+          <div id="flow-actions" class="flex flex-wrap gap-2"></div>
+          <p class="mt-2 text-[11px] text-slate-500">버튼 클릭은 시연 표시일 뿐 실제 동작은 없습니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 사장님 메시지 (owner_message_sample 있을 때) -->
+    <div id="result-message-section" class="hidden">
       <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">사장님에게 전달될 예시 메시지</h4>
       <div id="result-message" class="rounded-md border border-slate-800 bg-slate-950 p-4 text-sm text-slate-100 whitespace-pre-wrap leading-relaxed font-mono"></div>
     </div>
+
     <p class="text-[11px] text-slate-500">완료 시각: <span id="result-time" class="text-slate-400"></span></p>
   </div>
 
@@ -109,12 +185,34 @@
   const statusEl = document.getElementById('result-status');
   const stepsEl = document.getElementById('result-steps');
   const summaryEl = document.getElementById('result-summary');
+  const flowSec = document.getElementById('result-flow-section');
   const messageSec = document.getElementById('result-message-section');
   const messageEl = document.getElementById('result-message');
   const timeEl = document.getElementById('result-time');
 
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function ratingStars(n){
+    n = Math.max(0, Math.min(5, parseInt(n) || 0));
+    return '★'.repeat(n) + '☆'.repeat(5 - n);
+  }
+
+  function renderFlow(flow){
+    document.getElementById('flow-platform').textContent = flow.detected_platform || '';
+    document.getElementById('flow-rating').textContent = ratingStars(flow.rating);
+    document.getElementById('flow-review').textContent = flow.detected_review || '';
+    document.getElementById('flow-draft').textContent = flow.reply_draft || '';
+    document.getElementById('flow-insertion').textContent = flow.insertion_preview || '';
+    const actionsEl = document.getElementById('flow-actions');
+    const actions = flow.owner_actions || [];
+    actionsEl.innerHTML = actions.map((a, i) => {
+      const cls = i === 0
+        ? 'bg-slate-100 text-slate-900'
+        : 'border border-slate-700 text-slate-200';
+      return `<button type="button" disabled class="rounded-md text-xs font-medium px-3 py-1.5 ${cls} cursor-default">${escapeHtml(a)}</button>`;
+    }).join('');
   }
 
   btn.addEventListener('click', async () => {
@@ -127,7 +225,8 @@
     summaryEl.textContent = '';
     messageEl.textContent = '';
     timeEl.textContent = '';
-    messageSec.classList.remove('hidden');
+    flowSec.classList.add('hidden');
+    messageSec.classList.add('hidden');
 
     try {
       const res = await fetch(`/api/ideas/${id}/run`, {
@@ -149,17 +248,22 @@
           </li>
         `).join('');
         summaryEl.textContent = (data.execution_result && data.execution_result.summary) || '';
-        messageEl.textContent = data.owner_message_sample || '(미리보기 메시지 없음)';
         timeEl.textContent = data.finished_at || '';
+
+        if (data.flow) {
+          flowSec.classList.remove('hidden');
+          renderFlow(data.flow);
+        } else if (data.owner_message_sample) {
+          messageSec.classList.remove('hidden');
+          messageEl.textContent = data.owner_message_sample;
+        }
       } else {
         stepsEl.innerHTML = `<li class="text-rose-400">아이디어 ID를 찾지 못했습니다: ${escapeHtml(id)}</li>`;
-        messageSec.classList.add('hidden');
       }
     } catch (e) {
       statusEl.textContent = '✗ 네트워크 오류';
       statusEl.className = 'text-xs font-medium text-rose-400';
       stepsEl.innerHTML = `<li class="text-rose-400">${escapeHtml(e.message)}</li>`;
-      messageSec.classList.add('hidden');
     }
   });
 })();
