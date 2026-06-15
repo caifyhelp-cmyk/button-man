@@ -13,18 +13,21 @@
     <aside class="hidden md:flex w-60 shrink-0 flex-col border-r border-slate-800 bg-slate-900">
       <div class="flex items-center gap-2 px-5 py-5 border-b border-slate-800">
         <span class="text-2xl leading-none">📲</span>
-        <span class="font-semibold tracking-tight text-slate-100">button-man</span>
+        <div class="flex flex-col">
+          <span class="font-semibold tracking-tight text-slate-100">button-man</span>
+          <span class="text-[10px] uppercase tracking-wider text-slate-500">자동화 실험실</span>
+        </div>
       </div>
       <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
         {% if active == 'ideas' %}
           <a href="/" class="block rounded-md px-3 py-2 bg-slate-800 text-slate-100 font-medium">아이디어뱅크</a>
         {% else %}
-          <a href="/" class="block rounded-md px-3 py-2 text-slate-400 hover:bg-slate-800/60 hover:text-slate-100">아이디어뱅크</a>
+          <a href="/" class="block rounded-md px-3 py-2 text-slate-300 hover:bg-slate-800/60 hover:text-slate-100">아이디어뱅크</a>
         {% endif %}
-        <span class="block rounded-md px-3 py-2 text-slate-600 cursor-not-allowed">실행 이력 <span class="ml-1 text-[10px] uppercase tracking-wider text-slate-700">준비중</span></span>
-        <span class="block rounded-md px-3 py-2 text-slate-600 cursor-not-allowed">설정 <span class="ml-1 text-[10px] uppercase tracking-wider text-slate-700">준비중</span></span>
+        <span class="block rounded-md px-3 py-2 text-slate-500 cursor-not-allowed">실행 이력 <span class="ml-1 text-[10px] uppercase tracking-wider text-slate-600">준비중</span></span>
+        <span class="block rounded-md px-3 py-2 text-slate-500 cursor-not-allowed">설정 <span class="ml-1 text-[10px] uppercase tracking-wider text-slate-600">준비중</span></span>
       </nav>
-      <div class="px-5 py-4 text-xs text-slate-600 border-t border-slate-800">v0.2.0 · MVP</div>
+      <div class="px-5 py-4 text-xs text-slate-500 border-t border-slate-800">v0.3.0 · MVP</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0">
@@ -34,7 +37,7 @@
           <h1 class="text-lg font-semibold tracking-tight text-slate-100">{% block page_title %}아이디어뱅크{% endblock %}</h1>
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-sm text-slate-500">소상공인 대시보드 MVP</span>
+          <span class="text-sm text-slate-400">소상공인 업무 자동화 실험실</span>
         </div>
       </header>
 
