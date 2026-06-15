@@ -1,55 +1,39 @@
 {% extends "_base.html" %}
+{% from "_macros.html" import difficulty_badge, status_badge %}
 {% block title %}아이디어뱅크{% endblock %}
 {% block page_title %}아이디어뱅크{% endblock %}
 {% block content %}
-{% set difficulty_labels = {'easy': '쉬움', 'medium': '보통', 'hard': '어려움'} %}
-{% set difficulty_styles = {
-  'easy': 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60',
-  'medium': 'bg-amber-950/40 text-amber-300 border-amber-800/60',
-  'hard': 'bg-rose-950/40 text-rose-300 border-rose-800/60'
-} %}
 
-<section class="flex items-start justify-between gap-4">
-  <div>
-    <h2 class="text-sm font-semibold text-slate-100">실험실에 등록된 자동화 아이디어 {{ ideas|length }}개</h2>
-    <p class="mt-1 text-xs text-slate-400">각 카드는 소상공인 매장의 실제 페인포인트에서 출발한 기획 가설입니다. 실행 버튼을 누르면 mock 결과 패널이 열립니다.</p>
-  </div>
+<section>
+  <h2 class="text-sm font-semibold text-slate-100">실험실에 등록된 자동화 아이디어 {{ ideas|length }}개</h2>
+  <p class="mt-1 text-xs text-slate-400">카드를 눌러 상세 페이지에서 기획을 확인하거나, 바로 mock 실행으로 결과를 미리 볼 수 있습니다.</p>
 </section>
 
 <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
   {% for idea in ideas %}
-  <article class="flex flex-col rounded-xl border border-slate-800 bg-slate-900 p-5">
+  <article class="flex flex-col rounded-xl border border-slate-800 bg-slate-900 p-5 hover:border-slate-700 transition-colors">
     <div class="flex items-start justify-between gap-3">
-      <h3 class="text-base font-semibold tracking-tight text-slate-100">{{ idea.title }}</h3>
-      <span class="shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium {{ difficulty_styles.get(idea.difficulty, 'bg-slate-800 text-slate-300 border-slate-700') }}">
-        {{ difficulty_labels.get(idea.difficulty, idea.difficulty) }}
-      </span>
-    </div>
-    <p class="mt-2 text-sm text-slate-300 leading-relaxed">{{ idea.description }}</p>
-
-    <div class="mt-4 space-y-3 text-xs">
-      <div>
-        <div class="text-[10px] uppercase tracking-wider text-slate-500">문제 상황</div>
-        <p class="mt-1 text-slate-200 leading-relaxed">{{ idea.problem }}</p>
-      </div>
-      <div>
-        <div class="text-[10px] uppercase tracking-wider text-slate-500">해결 방식</div>
-        <p class="mt-1 text-slate-200 leading-relaxed">{{ idea.solution }}</p>
-      </div>
-      <div>
-        <div class="text-[10px] uppercase tracking-wider text-slate-500">검증 포인트</div>
-        <p class="mt-1 text-slate-200 leading-relaxed">{{ idea.validation }}</p>
+      <h3 class="text-base font-semibold tracking-tight text-slate-100">
+        <a href="/ideas/{{ idea.id }}" class="hover:text-white">{{ idea.title }}</a>
+      </h3>
+      <div class="flex shrink-0 items-center gap-1.5">
+        {{ status_badge(idea.status) }}
+        {{ difficulty_badge(idea.difficulty) }}
       </div>
     </div>
-
-    <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400">
-      <span class="text-slate-500">예상 사용자</span> · {{ idea.target_user }}
+    <p class="mt-2 text-sm text-slate-300 leading-relaxed line-clamp-2">{{ idea.description }}</p>
+    <div class="mt-3 text-[11px] text-slate-500">
+      <span class="text-slate-400">대상</span> · {{ idea.target_user }}
     </div>
 
-    <div class="mt-4">
+    <div class="mt-5 flex gap-2">
+      <a
+        href="/ideas/{{ idea.id }}"
+        class="flex-1 text-center rounded-md border border-slate-700 text-slate-200 text-sm font-medium px-3 py-2 hover:bg-slate-800 transition-colors"
+      >자세히 보기</a>
       <button
         type="button"
-        class="run-btn w-full rounded-md bg-slate-100 text-slate-900 text-sm font-medium px-4 py-2 hover:bg-white transition-colors"
+        class="run-btn flex-1 rounded-md bg-slate-100 text-slate-900 text-sm font-medium px-3 py-2 hover:bg-white transition-colors"
         data-idea-id="{{ idea.id }}"
         data-idea-title="{{ idea.title }}"
       >📲 mock 실행</button>
@@ -58,18 +42,16 @@
   {% endfor %}
 </section>
 
-<!-- 결과 모달 -->
+<!-- 결과 모달 (카드의 mock 실행 버튼용) -->
 <div id="result-modal" class="fixed inset-0 z-50 hidden">
   <div class="absolute inset-0 bg-black/70" data-modal-close></div>
   <div class="absolute inset-0 flex items-start justify-center p-4 pointer-events-none overflow-y-auto">
-    <div class="pointer-events-auto my-12 w-full max-w-2xl rounded-xl bg-slate-900 shadow-2xl border border-slate-800">
+    <div class="pointer-events-auto my-12 w-full max-w-xl rounded-xl bg-slate-900 shadow-2xl border border-slate-800">
       <div class="flex items-center justify-between border-b border-slate-800 px-5 py-4">
         <h3 class="text-base font-semibold text-slate-100" id="modal-title">실행 결과</h3>
         <button type="button" class="text-slate-400 hover:text-slate-100" data-modal-close aria-label="닫기">✕</button>
       </div>
-      <div class="px-5 py-4 space-y-6">
-
-        <!-- Section 1: 실행 결과 -->
+      <div class="px-5 py-4 space-y-5">
         <div>
           <div class="flex items-center justify-between mb-2">
             <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400">실행 결과</h4>
@@ -78,21 +60,13 @@
           <ul id="modal-steps" class="rounded-md border border-slate-800 bg-slate-950/60 p-3 space-y-1.5 text-sm text-slate-200"></ul>
           <p id="modal-summary" class="mt-2 text-xs text-slate-400 leading-relaxed"></p>
         </div>
-
-        <!-- Section 2: 사장님 알림 미리보기 -->
         <div id="modal-message-section">
           <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">사장님에게 전달될 예시 메시지</h4>
           <div id="modal-message" class="rounded-md border border-slate-800 bg-slate-950 p-4 text-sm text-slate-100 whitespace-pre-wrap leading-relaxed font-mono"></div>
         </div>
-
-        <!-- Section 3: 연동 요구사항 -->
-        <div id="modal-integration-section">
-          <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">다음 실제 연동 시 필요한 데이터</h4>
-          <ul id="modal-integration" class="space-y-1.5 text-sm text-slate-200"></ul>
-        </div>
-
       </div>
-      <div class="border-t border-slate-800 px-5 py-3 flex justify-end">
+      <div class="border-t border-slate-800 px-5 py-3 flex items-center justify-between">
+        <a id="modal-detail-link" href="#" class="text-xs text-slate-400 hover:text-slate-100">자세히 보기 →</a>
         <button type="button" class="rounded-md border border-slate-700 text-slate-200 px-3 py-1.5 text-sm hover:bg-slate-800" data-modal-close>닫기</button>
       </div>
     </div>
@@ -108,12 +82,10 @@
   const summaryEl = document.getElementById('modal-summary');
   const messageSec = document.getElementById('modal-message-section');
   const messageEl = document.getElementById('modal-message');
-  const integrationSec = document.getElementById('modal-integration-section');
-  const integrationEl = document.getElementById('modal-integration');
+  const detailLink = document.getElementById('modal-detail-link');
 
   function open(){ modal.classList.remove('hidden'); }
   function close(){ modal.classList.add('hidden'); }
-
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
@@ -126,14 +98,13 @@
       const id = btn.dataset.ideaId;
       const title = btn.dataset.ideaTitle;
       titleEl.textContent = title + ' · 실행 결과 (mock)';
+      detailLink.href = `/ideas/${id}`;
       statusEl.textContent = '실행 중...';
       statusEl.className = 'text-xs font-medium text-slate-400';
       stepsEl.innerHTML = '<li class="text-slate-500">단계 진행 중...</li>';
       summaryEl.textContent = '';
       messageEl.textContent = '';
-      integrationEl.innerHTML = '';
       messageSec.classList.remove('hidden');
-      integrationSec.classList.remove('hidden');
       open();
 
       try {
@@ -144,7 +115,6 @@
         });
         const data = await res.json();
         const ok = res.ok && data.status !== 'not_found';
-
         statusEl.textContent = ok ? `✓ ${data.status}` : `✗ ${data.status || res.status}`;
         statusEl.className = 'text-xs font-medium ' + (ok ? 'text-emerald-400' : 'text-rose-400');
 
@@ -158,15 +128,10 @@
           `).join('');
           summaryEl.textContent = (data.execution_result && data.execution_result.summary) || '';
           messageEl.textContent = data.owner_message_sample || '(미리보기 메시지 없음)';
-          const reqs = data.next_integration_requirements || [];
-          integrationEl.innerHTML = reqs.length
-            ? reqs.map(r => `<li class="flex gap-2"><span class="text-slate-500">•</span><span>${escapeHtml(r)}</span></li>`).join('')
-            : '<li class="text-slate-500">필요 데이터 명세 없음</li>';
         } else {
           stepsEl.innerHTML = `<li class="text-rose-400">아이디어 ID를 찾지 못했습니다: ${escapeHtml(id)}</li>`;
           summaryEl.textContent = '';
           messageSec.classList.add('hidden');
-          integrationSec.classList.add('hidden');
         }
       } catch (e) {
         statusEl.textContent = '✗ 네트워크 오류';
@@ -174,7 +139,6 @@
         stepsEl.innerHTML = `<li class="text-rose-400">${escapeHtml(e.message)}</li>`;
         summaryEl.textContent = '';
         messageSec.classList.add('hidden');
-        integrationSec.classList.add('hidden');
       }
     });
   });

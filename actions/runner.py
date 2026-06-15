@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""아이디어 실행 엔진.
+"""아이디어 실행 엔진 (mock).
 
-MVP 단계에서는 ideas.json에 저장된 기획 데이터를 그대로 받아 mock 실행 결과로 포장한다.
-추후 실제 연동이 붙으면 run_idea() 시그니처는 유지하고 내부 구현만 교체한다.
+ideas.json에 저장된 기획 데이터를 받아 mock 실행 결과로 포장한다.
+실제 연동이 붙으면 run_idea() 시그니처는 유지하고 내부 구현만 교체한다.
 """
 from datetime import datetime, timezone
 
@@ -31,6 +31,5 @@ def run_idea(idea_id, payload=None):
         'title': idea['title'],
         'execution_result': _mock_execution(idea),
         'owner_message_sample': idea.get('owner_message_sample', ''),
-        'next_integration_requirements': idea.get('integration_requirements', []),
         'finished_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
     }

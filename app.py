@@ -2,7 +2,7 @@
 import os
 import traceback
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, abort
 from flask_cors import CORS
 
 import actions
@@ -29,6 +29,14 @@ def health_check():
 def dashboard():
     ideas = actions.load_ideas()
     return render_template('dashboard.html', ideas=ideas, active='ideas')
+
+
+@app.route('/ideas/<idea_id>')
+def idea_detail(idea_id):
+    idea = actions.get_idea(idea_id)
+    if not idea:
+        return render_template('not_found.html', idea_id=idea_id, active='ideas'), 404
+    return render_template('idea_detail.html', idea=idea, active='ideas')
 
 
 @app.route('/api/ideas/<idea_id>/run', methods=['POST'])

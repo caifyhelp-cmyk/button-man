@@ -1,0 +1,35 @@
+{# 공통 라벨/스타일 매핑 — 카드와 상세 페이지 모두에서 import 해서 사용 #}
+
+{% set difficulty_labels = {'easy': '쉬움', 'medium': '보통', 'hard': '어려움'} %}
+{% set difficulty_styles = {
+  'easy': 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60',
+  'medium': 'bg-amber-950/40 text-amber-300 border-amber-800/60',
+  'hard': 'bg-rose-950/40 text-rose-300 border-rose-800/60'
+} %}
+
+{% set status_labels = {
+  'planning': '기획',
+  'reviewing': '검토중',
+  'ready': '실험 준비',
+  'running': '실험중',
+  'paused': '보류'
+} %}
+{% set status_styles = {
+  'planning': 'bg-slate-800 text-slate-300 border-slate-700',
+  'reviewing': 'bg-cyan-950/40 text-cyan-300 border-cyan-800/60',
+  'ready': 'bg-blue-950/40 text-blue-300 border-blue-800/60',
+  'running': 'bg-violet-950/40 text-violet-300 border-violet-800/60',
+  'paused': 'bg-amber-950/40 text-amber-300 border-amber-800/60'
+} %}
+
+{% macro difficulty_badge(difficulty) -%}
+  <span class="shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium {{ difficulty_styles.get(difficulty, 'bg-slate-800 text-slate-300 border-slate-700') }}">
+    {{ difficulty_labels.get(difficulty, difficulty) }}
+  </span>
+{%- endmacro %}
+
+{% macro status_badge(status) -%}
+  <span class="shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium {{ status_styles.get(status, 'bg-slate-800 text-slate-300 border-slate-700') }}">
+    {{ status_labels.get(status, status) }}
+  </span>
+{%- endmacro %}

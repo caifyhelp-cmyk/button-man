@@ -1,0 +1,11 @@
+{% extends "_base.html" %}
+{% block title %}찾을 수 없음{% endblock %}
+{% block page_title %}아이디어를 찾을 수 없습니다{% endblock %}
+{% block content %}
+<section class="rounded-xl border border-slate-800 bg-slate-900 p-8 text-center">
+  <div class="text-3xl">📲</div>
+  <h2 class="mt-4 text-lg font-semibold text-slate-100">"{{ idea_id }}" 아이디어가 없습니다</h2>
+  <p class="mt-2 text-sm text-slate-400">데이터셋에 등록되지 않은 ID입니다.</p>
+  <a href="/" class="mt-6 inline-block rounded-md bg-slate-100 text-slate-900 text-sm font-medium px-4 py-2 hover:bg-white transition-colors">목록으로 돌아가기</a>
+</section>
+{% endblock %}

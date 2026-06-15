@@ -1,0 +1,167 @@
+{% extends "_base.html" %}
+{% from "_macros.html" import difficulty_badge, status_badge %}
+{% block title %}{{ idea.title }}{% endblock %}
+{% block page_title %}아이디어 상세{% endblock %}
+{% block content %}
+
+<nav class="text-xs">
+  <a href="/" class="text-slate-400 hover:text-slate-100">← 아이디어뱅크 목록</a>
+</nav>
+
+<!-- 헤더: 제목 + 상태/난이도 + 한 줄 요약 -->
+<section class="rounded-xl border border-slate-800 bg-slate-900 p-6">
+  <div class="flex items-start justify-between gap-4">
+    <h2 class="text-2xl font-semibold tracking-tight text-slate-100">{{ idea.title }}</h2>
+    <div class="flex shrink-0 items-center gap-2">
+      {{ status_badge(idea.status) }}
+      {{ difficulty_badge(idea.difficulty) }}
+    </div>
+  </div>
+  <div class="mt-3">
+    <div class="text-[10px] uppercase tracking-wider text-slate-500">한 줄 요약</div>
+    <p class="mt-1 text-base text-slate-200 leading-relaxed">{{ idea.description }}</p>
+  </div>
+</section>
+
+<!-- 기획 본문: 문제 / 해결 / 검증 -->
+<section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+    <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">문제 상황</div>
+    <p class="text-sm text-slate-200 leading-relaxed">{{ idea.problem }}</p>
+  </div>
+  <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+    <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">해결 방식</div>
+    <p class="text-sm text-slate-200 leading-relaxed">{{ idea.solution }}</p>
+  </div>
+  <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+    <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">검증 포인트</div>
+    <p class="text-sm text-slate-200 leading-relaxed">{{ idea.validation }}</p>
+  </div>
+</section>
+
+<!-- 대상 사용자 -->
+<section class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+  <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">예상 사용자</div>
+  <p class="text-sm text-slate-200">{{ idea.target_user }}</p>
+</section>
+
+<!-- 필요 데이터 / 실제 연동 후보 -->
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+    <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">필요 데이터</div>
+    <ul class="space-y-2 text-sm text-slate-200">
+      {% for item in idea.required_data %}
+      <li class="flex gap-2"><span class="text-slate-500">•</span><span>{{ item }}</span></li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+    <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">실제 연동 후보</div>
+    <ul class="space-y-2 text-sm text-slate-200">
+      {% for item in idea.integration_candidates %}
+      <li class="flex gap-2"><span class="text-slate-500">•</span><span>{{ item }}</span></li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+
+<!-- mock 실행 결과 -->
+<section class="rounded-xl border border-slate-800 bg-slate-900 p-6">
+  <div class="flex items-center justify-between gap-4">
+    <div>
+      <h3 class="text-sm font-semibold text-slate-100">mock 실행 결과</h3>
+      <p class="mt-1 text-xs text-slate-400">실제 API 연동 전 단계입니다. 버튼을 누르면 시나리오만 시연됩니다.</p>
+    </div>
+    <button
+      id="run-btn"
+      type="button"
+      data-idea-id="{{ idea.id }}"
+      class="rounded-md bg-slate-100 text-slate-900 text-sm font-medium px-4 py-2 hover:bg-white transition-colors"
+    >📲 mock 실행</button>
+  </div>
+
+  <div id="run-result" class="mt-5 hidden space-y-5">
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400">실행 결과</h4>
+        <span id="result-status" class="text-xs font-medium"></span>
+      </div>
+      <ul id="result-steps" class="rounded-md border border-slate-800 bg-slate-950/60 p-3 space-y-1.5 text-sm text-slate-200"></ul>
+      <p id="result-summary" class="mt-2 text-xs text-slate-400 leading-relaxed"></p>
+    </div>
+    <div id="result-message-section">
+      <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">사장님에게 전달될 예시 메시지</h4>
+      <div id="result-message" class="rounded-md border border-slate-800 bg-slate-950 p-4 text-sm text-slate-100 whitespace-pre-wrap leading-relaxed font-mono"></div>
+    </div>
+    <p class="text-[11px] text-slate-500">완료 시각: <span id="result-time" class="text-slate-400"></span></p>
+  </div>
+
+  <div id="run-placeholder" class="mt-5 rounded-md border border-dashed border-slate-800 p-6 text-center text-xs text-slate-500">
+    아직 실행하지 않았습니다. 버튼을 누르면 mock 결과가 여기에 표시됩니다.
+  </div>
+</section>
+
+<script>
+(function(){
+  const btn = document.getElementById('run-btn');
+  const placeholder = document.getElementById('run-placeholder');
+  const result = document.getElementById('run-result');
+  const statusEl = document.getElementById('result-status');
+  const stepsEl = document.getElementById('result-steps');
+  const summaryEl = document.getElementById('result-summary');
+  const messageSec = document.getElementById('result-message-section');
+  const messageEl = document.getElementById('result-message');
+  const timeEl = document.getElementById('result-time');
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  btn.addEventListener('click', async () => {
+    const id = btn.dataset.ideaId;
+    placeholder.classList.add('hidden');
+    result.classList.remove('hidden');
+    statusEl.textContent = '실행 중...';
+    statusEl.className = 'text-xs font-medium text-slate-400';
+    stepsEl.innerHTML = '<li class="text-slate-500">단계 진행 중...</li>';
+    summaryEl.textContent = '';
+    messageEl.textContent = '';
+    timeEl.textContent = '';
+    messageSec.classList.remove('hidden');
+
+    try {
+      const res = await fetch(`/api/ideas/${id}/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}'
+      });
+      const data = await res.json();
+      const ok = res.ok && data.status !== 'not_found';
+      statusEl.textContent = ok ? `✓ ${data.status}` : `✗ ${data.status || res.status}`;
+      statusEl.className = 'text-xs font-medium ' + (ok ? 'text-emerald-400' : 'text-rose-400');
+
+      if (ok) {
+        const steps = (data.execution_result && data.execution_result.steps) || [];
+        stepsEl.innerHTML = steps.map(s => `
+          <li class="flex items-start gap-2">
+            <span class="text-emerald-400 mt-0.5">✓</span>
+            <span>${escapeHtml(s.label)}</span>
+          </li>
+        `).join('');
+        summaryEl.textContent = (data.execution_result && data.execution_result.summary) || '';
+        messageEl.textContent = data.owner_message_sample || '(미리보기 메시지 없음)';
+        timeEl.textContent = data.finished_at || '';
+      } else {
+        stepsEl.innerHTML = `<li class="text-rose-400">아이디어 ID를 찾지 못했습니다: ${escapeHtml(id)}</li>`;
+        messageSec.classList.add('hidden');
+      }
+    } catch (e) {
+      statusEl.textContent = '✗ 네트워크 오류';
+      statusEl.className = 'text-xs font-medium text-rose-400';
+      stepsEl.innerHTML = `<li class="text-rose-400">${escapeHtml(e.message)}</li>`;
+      messageSec.classList.add('hidden');
+    }
+  });
+})();
+</script>
+{% endblock %}
