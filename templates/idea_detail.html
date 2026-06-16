@@ -554,35 +554,48 @@
     if ((yUp && lDown) || (yDown && lUp)) return '전일과 전주 같은 요일의 흐름이 서로 다릅니다. 단기 변화인지 추세 변화인지 며칠 더 지켜볼 필요가 있습니다.';
     return '비교 기준값이 부족해 추세 판단이 어렵습니다. 며칠 더 데이터를 모아 비교해보면 좋겠습니다.';
   }
-  function nextAction(yd, lwd){
-    const yUp = yd.rate !== null && yd.rate > 0;
-    const yDown = yd.rate !== null && yd.rate < 0;
-    const lUp = lwd.rate !== null && lwd.rate > 0;
-    const lDown = lwd.rate !== null && lwd.rate < 0;
-    if (yUp && lUp) return '내일은 오늘 잘 팔린 시간대의 흐름을 유지할 수 있도록 준비해보면 좋겠습니다.';
-    if (yDown && lDown) return '내일은 매출이 줄어든 시간대의 유입 동선과 메뉴 노출을 점검해보면 좋겠습니다.';
-    if (yUp && lDown) return '내일은 전주 대비 약했던 시간대를 보완할 수 있는 운영 방식을 확인해보면 좋겠습니다.';
-    if (yDown && lUp) return '내일은 전일 대비 빠진 시간대의 변화 원인을 확인해보면 좋겠습니다.';
-    return '내일은 핵심 시간대 매출을 좀 더 자세히 기록해보면 좋겠습니다.';
+  function refineNote(note){
+    if (!note) return '';
+    const lines = note.split(',').map(s => s.trim()).filter(Boolean);
+    if (!lines.length) return '';
+    return lines.map((line, i) => {
+      const isLast = i === lines.length - 1;
+      if (!isLast) return line + ',';
+      let last = line.replace(/(았|었|였)음(\.?)$/, '$1습니다.');
+      if (!/[.!?]$/.test(last)) last += '.';
+      return last;
+    }).join('\n');
   }
   function buildKakao(d){
-    const lines = [];
-    const ratePart = [];
-    if (d.yesterday.rate !== null) ratePart.push(`전일보다 ${pct(d.yesterday.rate)}`);
-    if (d.lastweek.rate !== null) ratePart.push(`전주 같은 요일보다 ${pct(d.lastweek.rate)}`);
-    let head = `오늘 매출은 ${won(d.todaySales)}`;
-    if (ratePart.length) {
-      const tone = (d.yesterday.rate !== null && d.yesterday.rate >= 0) || (d.lastweek.rate !== null && d.lastweek.rate >= 0) ? '높았습니다' : '낮았습니다';
-      head += `으로 ${ratePart.join(', ')} ${tone}.`;
+    const blocks = ['오늘 마감 요약입니다.'];
+    const yh = d.yesterday, lh = d.lastweek;
+    const hasY = yh.rate !== null, hasL = lh.rate !== null;
+    let s = `오늘 매출은 ${won(d.todaySales)}`;
+    if (hasY && hasL) {
+      const sameDir = (yh.rate >= 0) === (lh.rate >= 0);
+      if (sameDir) {
+        const verb = yh.rate >= 0 ? '높았습니다' : '낮았습니다';
+        s += `으로\n전일보다 ${pct(yh.rate)},\n전주 같은 요일보다 ${pct(lh.rate)} ${verb}.`;
+      } else {
+        const yVerb = yh.rate >= 0 ? '높고' : '낮고';
+        const lVerb = lh.rate >= 0 ? '높았습니다' : '낮았습니다';
+        s += `으로\n전일보다 ${pct(yh.rate)} ${yVerb},\n전주 같은 요일보다 ${pct(lh.rate)} ${lVerb}.`;
+      }
+    } else if (hasY) {
+      const verb = yh.rate >= 0 ? '높았습니다' : '낮았습니다';
+      s += `으로\n전일보다 ${pct(yh.rate)} ${verb}.`;
+    } else if (hasL) {
+      const verb = lh.rate >= 0 ? '높았습니다' : '낮았습니다';
+      s += `으로\n전주 같은 요일보다 ${pct(lh.rate)} ${verb}.`;
     } else {
-      head += '입니다.';
+      s += '입니다.';
     }
-    lines.push(head);
-    lines.push(`객수는 ${d.customers}명, 객단가는 ${won(d.avgTicket)}입니다.`);
-    lines.push(`가장 많이 팔린 메뉴는 ${d.topMenu}였습니다.`);
-    if (d.note) lines.push(d.note);
-    lines.push(nextAction(d.yesterday, d.lastweek));
-    return lines.join('\n');
+    blocks.push(s);
+    blocks.push(`객수는 ${d.customers}명,\n객단가는 ${won(d.avgTicket)}입니다.`);
+    blocks.push(`가장 많이 팔린 메뉴는 ${d.topMenu}였습니다.`);
+    const note = refineNote(d.note);
+    if (note) blocks.push(note);
+    return blocks.join('\n\n');
   }
   function saveHistory(data){
     try {
