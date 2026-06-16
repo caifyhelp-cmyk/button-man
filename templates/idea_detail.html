@@ -583,12 +583,12 @@
   }
   function absPct(n){ return Math.abs(n).toFixed(1) + '%'; }
   function dirPhraseEnd(base, rate){
-    if (rate > 0) return `${base}보다 ${pct(rate)} 높았습니다`;
+    if (rate > 0) return `${base}보다 ${absPct(rate)} 높았습니다`;
     if (rate < 0) return `${base}보다 ${absPct(rate)} 낮았습니다`;
     return `${base}과 동일합니다`;
   }
   function dirPhraseMid(base, rate){
-    if (rate > 0) return `${base}보다 ${pct(rate)} 높고`;
+    if (rate > 0) return `${base}보다 ${absPct(rate)} 높고`;
     if (rate < 0) return `${base}보다 ${absPct(rate)} 낮고`;
     return `${base}과 동일하고`;
   }
@@ -600,9 +600,7 @@
       const lDir = lh.rate > 0 ? 1 : lh.rate < 0 ? -1 : 0;
       if (yDir === lDir && yDir !== 0) {
         const verb = yDir > 0 ? '높았습니다' : '낮았습니다';
-        const yPart = yDir > 0 ? pct(yh.rate) : absPct(yh.rate);
-        const lPart = yDir > 0 ? pct(lh.rate) : absPct(lh.rate);
-        s += `으로\n전일보다 ${yPart},\n전주 같은 요일보다 ${lPart} ${verb}.`;
+        s += `으로\n전일보다 ${absPct(yh.rate)},\n전주 같은 요일보다 ${absPct(lh.rate)} ${verb}.`;
       } else {
         s += `으로\n${dirPhraseMid('전일', yh.rate)},\n${dirPhraseEnd('전주 같은 요일', lh.rate)}.`;
       }
