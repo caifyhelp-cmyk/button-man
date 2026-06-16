@@ -11,29 +11,25 @@
   'planning': '기획',
   'ready': '실험 준비',
   'running': '실험중',
-  'live': '운영 가능',
-  'paused': '보류'
+  'live': '운영 가능'
 } %}
 {% set status_styles = {
   'planning': 'bg-slate-800 text-slate-300 border-slate-700',
   'ready': 'bg-blue-950/40 text-blue-300 border-blue-800/60',
   'running': 'bg-violet-950/40 text-violet-300 border-violet-800/60',
-  'live': 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60',
-  'paused': 'bg-amber-950/40 text-amber-300 border-amber-800/60'
+  'live': 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60'
 } %}
 {% set status_short = {
   'planning': '아이디어와 기획 내용만 정리된 상태. mock 구현은 아직 시작 전.',
   'ready': '1차 mock 테스트를 끝마쳐 시연이 가능한 상태. 실행만 누르면 보고서·메시지가 나옴.',
   'running': 'mock 결과를 보면서 문구·계산·UI를 다듬는 고도화 진행 단계.',
-  'live': '실제 운영·배포가 가능한 수준으로 정리 완료. 외부 연동만 붙이면 바로 쓸 수 있음.',
-  'paused': '이전에 진행 중이었으나 우선순위·결정 사유로 잠시 멈춰 둔 상태.'
+  'live': '실제 운영·배포가 가능한 수준으로 정리 완료. 외부 연동만 붙이면 바로 쓸 수 있음.'
 } %}
 {% set status_meaning = {
   'planning': '아이디어와 기획만 정리됨 (아무 구현도 시작 전)',
   'ready': '1차 mock 테스트 완료 — 시연 가능',
   'running': 'mock 결과를 보며 고도화 진행 중',
-  'live': '실제 운영·배포가 가능한 단계',
-  'paused': '진행 중이었으나 일시 중단'
+  'live': '실제 운영·배포가 가능한 단계'
 } %}
 
 {% macro difficulty_badge(difficulty) -%}
@@ -53,10 +49,10 @@
   <summary class="cursor-pointer text-xs text-slate-300 select-none flex items-center gap-2">
     <span class="text-slate-500">ⓘ</span>
     <span>진행 상태 뱃지 의미 보기</span>
-    <span class="ml-auto text-[10px] text-slate-500">기획 · 실험 준비 · 실험중 · 운영 가능 · 보류</span>
+    <span class="ml-auto text-[10px] text-slate-500">기획 · 실험 준비 · 실험중 · 운영 가능</span>
   </summary>
   <ul class="mt-4 space-y-3 text-xs">
-    {% for key in ['planning', 'ready', 'running', 'live', 'paused'] %}
+    {% for key in ['planning', 'ready', 'running', 'live'] %}
     <li class="flex items-start gap-3">
       <span class="shrink-0 mt-0.5 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium {{ status_styles[key] }}">{{ status_labels[key] }}</span>
       <div class="text-slate-300 leading-relaxed">
@@ -68,7 +64,7 @@
   </ul>
   <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-500 leading-relaxed">
     <span class="text-slate-400">단계 흐름:</span>
-    기획 → 실험 준비 → 실험중 → 운영 가능 (중간에 멈추면 보류)
+    기획 → 실험 준비 → 실험중 → 운영 가능
   </div>
 </details>
 {%- endmacro %}
