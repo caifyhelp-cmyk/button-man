@@ -8,7 +8,7 @@
   <a href="/" class="text-slate-400 hover:text-slate-100">← 아이디어뱅크 목록</a>
 </nav>
 
-<!-- 헤더: 제목 + 상태/난이도 + 한 줄 요약 -->
+<!-- 상단 헤더 -->
 <section class="rounded-xl border border-slate-800 bg-slate-900 p-6">
   <div class="flex items-start justify-between gap-4">
     <h2 class="text-2xl font-semibold tracking-tight text-slate-100">{{ idea.title }}</h2>
@@ -21,164 +21,250 @@
     <div class="text-[10px] uppercase tracking-wider text-slate-500">한 줄 요약</div>
     <p class="mt-1 text-base text-slate-200 leading-relaxed">{{ idea.description }}</p>
   </div>
-</section>
-
-<!-- 기획 본문: 문제 / 해결 / 검증 -->
-<section class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-  <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-    <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">문제 상황</div>
-    <p class="text-sm text-slate-200 leading-relaxed">{{ idea.problem }}</p>
-  </div>
-  <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-    <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">해결 방식</div>
-    <p class="text-sm text-slate-200 leading-relaxed">{{ idea.solution }}</p>
-  </div>
-  <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-    <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">검증 포인트</div>
-    <p class="text-sm text-slate-200 leading-relaxed">{{ idea.validation }}</p>
+  <div class="mt-3">
+    <div class="text-[10px] uppercase tracking-wider text-slate-500">예상 사용자</div>
+    <p class="mt-1 text-sm text-slate-200">{{ idea.target_user }}</p>
   </div>
 </section>
 
-<!-- 대상 사용자 -->
-<section class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-  <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">예상 사용자</div>
-  <p class="text-sm text-slate-200">{{ idea.target_user }}</p>
-</section>
+<!-- 섹션 탭 -->
+<section>
+  <div class="border-b border-slate-800">
+    <nav id="detail-tabs" class="-mb-px flex flex-wrap gap-1 text-sm">
+      <button type="button" data-tab="overview" class="tab-btn px-4 py-2 border-b-2 border-slate-100 text-slate-100 font-medium">개요</button>
+      <button type="button" data-tab="plan" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">기획 정리</button>
+      <button type="button" data-tab="mock" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">mock 실행</button>
+      <button type="button" data-tab="next" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">다음 작업</button>
+    </nav>
+  </div>
 
-<!-- 대상 플랫폼 선정 (조건부) -->
-{% if idea.target_platforms %}
-<section class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-  <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">대상 플랫폼 선정</div>
-  <ul class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-slate-200">
-    {% for p in idea.target_platforms %}
-    <li class="flex gap-2"><span class="text-slate-500">•</span><span>{{ p }}</span></li>
-    {% endfor %}
-  </ul>
-</section>
-{% endif %}
+  <!-- 탭: 개요 -->
+  <div id="tab-overview" class="tab-panel mt-5 space-y-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">한 줄 요약</div>
+        <p class="text-sm text-slate-200 leading-relaxed">{{ idea.description }}</p>
+      </div>
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">예상 사용자</div>
+        <p class="text-sm text-slate-200 leading-relaxed">{{ idea.target_user }}</p>
+      </div>
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">현재 상태</div>
+        <div class="text-sm text-slate-200">{{ status_badge(idea.status) }}</div>
+      </div>
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">난이도</div>
+        <div class="text-sm text-slate-200">{{ difficulty_badge(idea.difficulty) }}</div>
+      </div>
+    </div>
+    <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+      <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">이 아이디어를 보는 이유</div>
+      <p class="text-sm text-slate-200 leading-relaxed">
+        {% if idea.why_this_idea %}{{ idea.why_this_idea }}{% else %}<span class="text-slate-500">아직 정리되지 않았습니다.</span>{% endif %}
+      </p>
+    </div>
+  </div>
 
-<!-- 구현 방식 후보 (조건부) -->
-{% if idea.implementation_options %}
-<section class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-  <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">구현 방식 후보</div>
-  <ul class="space-y-3">
-    {% for opt in idea.implementation_options %}
-    <li class="rounded-md border {{ 'border-emerald-800/60 bg-emerald-950/20' if opt.recommended else 'border-slate-800 bg-slate-950/40' }} p-3">
-      <div class="flex items-center gap-2">
-        <span class="text-sm font-medium text-slate-100">{{ opt.name }}</span>
-        {% if opt.recommended %}
-        <span class="inline-flex items-center rounded-full border border-emerald-700/70 bg-emerald-900/40 text-emerald-300 text-[10px] font-medium px-2 py-0.5 uppercase tracking-wider">1차 권장</span>
+  <!-- 탭: 기획 정리 -->
+  <div id="tab-plan" class="tab-panel mt-5 space-y-4 hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">문제 상황</div>
+        <p class="text-sm text-slate-200 leading-relaxed">{{ idea.problem }}</p>
+      </div>
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">해결 방식</div>
+        <p class="text-sm text-slate-200 leading-relaxed">{{ idea.solution }}</p>
+      </div>
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">검증 포인트</div>
+        <p class="text-sm text-slate-200 leading-relaxed">{{ idea.validation }}</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">필요 데이터</div>
+        {% if idea.required_data %}
+        <ul class="space-y-2 text-sm text-slate-200">
+          {% for item in idea.required_data %}
+          <li class="flex gap-2"><span class="text-slate-500">•</span><span>{{ item }}</span></li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-sm text-slate-500">정리된 항목이 없습니다.</p>
         {% endif %}
       </div>
-      {% if opt.note %}
-      <p class="mt-1.5 text-xs text-slate-400 leading-relaxed">{{ opt.note }}</p>
-      {% endif %}
-    </li>
-    {% endfor %}
-  </ul>
-</section>
-{% endif %}
-
-<!-- 필요 데이터 / 실제 연동 후보 -->
-<section class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-  <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-    <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">필요 데이터</div>
-    <ul class="space-y-2 text-sm text-slate-200">
-      {% for item in idea.required_data %}
-      <li class="flex gap-2"><span class="text-slate-500">•</span><span>{{ item }}</span></li>
-      {% endfor %}
-    </ul>
-  </div>
-  <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-    <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">실제 연동 후보</div>
-    <ul class="space-y-2 text-sm text-slate-200">
-      {% for item in idea.integration_candidates %}
-      <li class="flex gap-2"><span class="text-slate-500">•</span><span>{{ item }}</span></li>
-      {% endfor %}
-    </ul>
-  </div>
-</section>
-
-<!-- 최종 등록 흐름 (조건부) -->
-{% if idea.manual_finalization_note %}
-<section class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-  <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">최종 등록 흐름</div>
-  <p class="text-sm text-slate-200 leading-relaxed">{{ idea.manual_finalization_note }}</p>
-</section>
-{% endif %}
-
-<!-- mock 실행 결과 -->
-<section class="rounded-xl border border-slate-800 bg-slate-900 p-6">
-  <div class="flex items-center justify-between gap-4">
-    <div>
-      <h3 class="text-sm font-semibold text-slate-100">mock 실행 결과</h3>
-      <p class="mt-1 text-xs text-slate-400">실제 API 연동 전 단계입니다. 버튼을 누르면 시나리오만 시연됩니다.</p>
-    </div>
-    <button
-      id="run-btn"
-      type="button"
-      data-idea-id="{{ idea.id }}"
-      class="rounded-md bg-slate-100 text-slate-900 text-sm font-medium px-4 py-2 hover:bg-white transition-colors"
-    >📲 mock 실행</button>
-  </div>
-
-  <div id="run-result" class="mt-5 hidden space-y-5">
-    <div>
-      <div class="flex items-center justify-between mb-2">
-        <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400">실행 결과</h4>
-        <span id="result-status" class="text-xs font-medium"></span>
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">실제 연동 후보</div>
+        {% if idea.integration_candidates %}
+        <ul class="space-y-2 text-sm text-slate-200">
+          {% for item in idea.integration_candidates %}
+          <li class="flex gap-2"><span class="text-slate-500">•</span><span>{{ item }}</span></li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-sm text-slate-500">정리된 항목이 없습니다.</p>
+        {% endif %}
       </div>
-      <ul id="result-steps" class="rounded-md border border-slate-800 bg-slate-950/60 p-3 space-y-1.5 text-sm text-slate-200"></ul>
-      <p id="result-summary" class="mt-2 text-xs text-slate-400 leading-relaxed"></p>
+    </div>
+  </div>
+
+  <!-- 탭: mock 실행 -->
+  <div id="tab-mock" class="tab-panel mt-5 space-y-4 hidden">
+    <div class="rounded-xl border border-slate-800 bg-slate-900 p-6">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-100">mock 실행</h3>
+          <p class="mt-1 text-xs text-slate-400">실제 API 연동 전 단계입니다. 버튼을 누르면 시나리오만 시연됩니다.</p>
+        </div>
+        <button
+          id="run-btn"
+          type="button"
+          data-idea-id="{{ idea.id }}"
+          data-idea-title="{{ idea.title }}"
+          class="rounded-md bg-slate-100 text-slate-900 text-sm font-medium px-4 py-2 hover:bg-white transition-colors"
+        >📲 mock 실행</button>
+      </div>
     </div>
 
-    <!-- Flow 흐름 (mock_flow 있을 때) -->
-    <div id="result-flow-section" class="hidden">
-      <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">감지 및 답글 초안 흐름</h4>
-      <div class="rounded-md border border-slate-800 bg-slate-950/60 p-4 space-y-4">
-        <div>
-          <div class="text-[10px] uppercase tracking-wider text-slate-500">감지된 플랫폼</div>
-          <p id="flow-platform" class="mt-1 text-sm text-slate-100 font-medium"></p>
+    <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+      <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">입력 데이터 예시</div>
+      {% if idea.sample_input %}
+      <pre class="rounded-md border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 whitespace-pre-wrap font-mono leading-relaxed">{{ idea.sample_input }}</pre>
+      {% elif idea.required_data %}
+      <ul class="space-y-2 text-sm text-slate-200">
+        {% for item in idea.required_data %}
+        <li class="flex gap-2"><span class="text-slate-500">•</span><span>{{ item }}</span></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-sm text-slate-500">정리된 입력 예시가 없습니다.</p>
+      {% endif %}
+    </div>
+
+    <div id="run-result" class="hidden space-y-4">
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">자동 처리 결과</div>
+          <span id="result-status" class="text-xs font-medium"></span>
         </div>
-        <div>
-          <div class="text-[10px] uppercase tracking-wider text-slate-500">감지된 리뷰 원문</div>
-          <div class="mt-1 flex items-start gap-2">
-            <span id="flow-rating" class="text-amber-300 shrink-0 text-sm tracking-wide"></span>
-            <p id="flow-review" class="text-sm text-slate-100 leading-relaxed"></p>
+        <ul id="result-steps" class="rounded-md border border-slate-800 bg-slate-950/60 p-3 space-y-1.5 text-sm text-slate-200"></ul>
+        <p id="result-summary" class="mt-2 text-xs text-slate-400 leading-relaxed"></p>
+      </div>
+
+      <div id="result-flow-section" class="hidden rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">감지 및 답글 초안 흐름</div>
+        <div class="rounded-md border border-slate-800 bg-slate-950/60 p-4 space-y-4">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">감지된 플랫폼</div>
+            <p id="flow-platform" class="mt-1 text-sm text-slate-100 font-medium"></p>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">감지된 리뷰 원문</div>
+            <div class="mt-1 flex items-start gap-2">
+              <span id="flow-rating" class="text-amber-300 shrink-0 text-sm tracking-wide"></span>
+              <p id="flow-review" class="text-sm text-slate-100 leading-relaxed"></p>
+            </div>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">답글 초안</div>
+            <p id="flow-draft" class="mt-1 text-sm text-slate-100 leading-relaxed"></p>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">입력창 삽입 예정 문구</div>
+            <pre id="flow-insertion" class="mt-1 rounded-md border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 whitespace-pre-wrap font-mono leading-relaxed"></pre>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">사장님 선택 (시연 표시)</div>
+            <div id="flow-actions" class="flex flex-wrap gap-2"></div>
+            <p class="mt-2 text-[11px] text-slate-500">버튼 클릭은 시연 표시일 뿐 실제 동작은 없습니다.</p>
           </div>
         </div>
-        <div>
-          <div class="text-[10px] uppercase tracking-wider text-slate-500">답글 초안</div>
-          <p id="flow-draft" class="mt-1 text-sm text-slate-100 leading-relaxed"></p>
-        </div>
-        <div>
-          <div class="text-[10px] uppercase tracking-wider text-slate-500">입력창 삽입 예정 문구</div>
-          <pre id="flow-insertion" class="mt-1 rounded-md border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 whitespace-pre-wrap font-mono leading-relaxed"></pre>
-        </div>
-        <div>
-          <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">사장님 선택 (시연 표시)</div>
-          <div id="flow-actions" class="flex flex-wrap gap-2"></div>
-          <p class="mt-2 text-[11px] text-slate-500">버튼 클릭은 시연 표시일 뿐 실제 동작은 없습니다.</p>
-        </div>
       </div>
+
+      <div id="result-message-section" class="hidden rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">사장님에게 보여줄 결과 메시지</div>
+        <div id="result-message" class="rounded-md border border-slate-800 bg-slate-950 p-4 text-sm text-slate-100 whitespace-pre-wrap leading-relaxed font-mono"></div>
+      </div>
+
+      <p class="text-[11px] text-slate-500">완료 시각: <span id="result-time" class="text-slate-400"></span></p>
     </div>
 
-    <!-- 사장님 메시지 (owner_message_sample 있을 때) -->
-    <div id="result-message-section" class="hidden">
-      <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">사장님에게 전달될 예시 메시지</h4>
-      <div id="result-message" class="rounded-md border border-slate-800 bg-slate-950 p-4 text-sm text-slate-100 whitespace-pre-wrap leading-relaxed font-mono"></div>
+    <div id="run-placeholder" class="rounded-md border border-dashed border-slate-800 p-6 text-center text-xs text-slate-500">
+      아직 실행하지 않았습니다. 버튼을 누르면 mock 결과가 여기에 표시됩니다.
     </div>
 
-    <p class="text-[11px] text-slate-500">완료 시각: <span id="result-time" class="text-slate-400"></span></p>
+    <div class="rounded-md border border-amber-900/40 bg-amber-950/20 p-3 text-[11px] text-amber-200/80 leading-relaxed">
+      ⓘ 이 화면은 실제 API 연동 전 단계입니다. 표시되는 모든 결과는 mock 시나리오입니다.
+    </div>
   </div>
 
-  <div id="run-placeholder" class="mt-5 rounded-md border border-dashed border-slate-800 p-6 text-center text-xs text-slate-500">
-    아직 실행하지 않았습니다. 버튼을 누르면 mock 결과가 여기에 표시됩니다.
+  <!-- 탭: 다음 작업 -->
+  <div id="tab-next" class="tab-panel mt-5 space-y-4 hidden">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">실제 구현 전 확인할 것</div>
+        {% if idea.pre_implementation_checks %}
+        <ul class="space-y-2 text-sm text-slate-200">
+          {% for item in idea.pre_implementation_checks %}
+          <li class="flex gap-2"><span class="text-slate-500">•</span><span>{{ item }}</span></li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-sm text-slate-500">아직 정리되지 않았습니다.</p>
+        {% endif %}
+      </div>
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">리스크</div>
+        {% if idea.risks %}
+        <ul class="space-y-2 text-sm text-slate-200">
+          {% for item in idea.risks %}
+          <li class="flex gap-2"><span class="text-rose-400">!</span><span>{{ item }}</span></li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-sm text-slate-500">아직 정리되지 않았습니다.</p>
+        {% endif %}
+      </div>
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">우선순위 메모</div>
+        <p class="text-sm text-slate-200 leading-relaxed">
+          {% if idea.priority_note %}{{ idea.priority_note }}{% else %}<span class="text-slate-500">아직 정리되지 않았습니다.</span>{% endif %}
+        </p>
+      </div>
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">1차 테스트 방식</div>
+        <p class="text-sm text-slate-200 leading-relaxed">
+          {% if idea.first_test_plan %}{{ idea.first_test_plan }}{% else %}<span class="text-slate-500">아직 정리되지 않았습니다.</span>{% endif %}
+        </p>
+      </div>
+    </div>
   </div>
 </section>
 
 <script>
 (function(){
+  // 탭 전환
+  const tabs = document.querySelectorAll('#detail-tabs .tab-btn');
+  const panels = document.querySelectorAll('.tab-panel');
+  function showTab(name){
+    tabs.forEach(t => {
+      const on = t.dataset.tab === name;
+      t.classList.toggle('border-slate-100', on);
+      t.classList.toggle('text-slate-100', on);
+      t.classList.toggle('font-medium', on);
+      t.classList.toggle('border-transparent', !on);
+      t.classList.toggle('text-slate-400', !on);
+    });
+    panels.forEach(p => p.classList.toggle('hidden', p.id !== 'tab-' + name));
+    if (history.replaceState) history.replaceState(null, '', '#' + name);
+  }
+  tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
+  const initial = (location.hash || '').replace('#','');
+  if (['overview','plan','mock','next'].includes(initial)) showTab(initial);
+
+  // mock 실행
   const btn = document.getElementById('run-btn');
   const placeholder = document.getElementById('run-placeholder');
   const result = document.getElementById('run-result');
@@ -193,12 +279,10 @@
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
-
   function ratingStars(n){
     n = Math.max(0, Math.min(5, parseInt(n) || 0));
     return '★'.repeat(n) + '☆'.repeat(5 - n);
   }
-
   function renderFlow(flow){
     document.getElementById('flow-platform').textContent = flow.detected_platform || '';
     document.getElementById('flow-rating').textContent = ratingStars(flow.rating);
@@ -214,9 +298,27 @@
       return `<button type="button" disabled class="rounded-md text-xs font-medium px-3 py-1.5 ${cls} cursor-default">${escapeHtml(a)}</button>`;
     }).join('');
   }
+  function saveHistory(id, title, data){
+    try {
+      const key = 'buttonMan.history.v1';
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      list.unshift({
+        id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        executed_at: new Date().toISOString(),
+        idea_id: id,
+        idea_title: title,
+        run_type: 'mock',
+        status: 'success',
+        summary: (data.execution_result && data.execution_result.summary) || '',
+        payload: data
+      });
+      localStorage.setItem(key, JSON.stringify(list.slice(0, 100)));
+    } catch (_) {}
+  }
 
   btn.addEventListener('click', async () => {
     const id = btn.dataset.ideaId;
+    const title = btn.dataset.ideaTitle;
     placeholder.classList.add('hidden');
     result.classList.remove('hidden');
     statusEl.textContent = '실행 중...';
@@ -257,6 +359,7 @@
           messageSec.classList.remove('hidden');
           messageEl.textContent = data.owner_message_sample;
         }
+        saveHistory(id, title, data);
       } else {
         stepsEl.innerHTML = `<li class="text-rose-400">아이디어 ID를 찾지 못했습니다: ${escapeHtml(id)}</li>`;
       }
