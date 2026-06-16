@@ -112,6 +112,120 @@
 
   <!-- 탭: mock 실행 -->
   <div id="tab-mock" class="tab-panel mt-5 space-y-4 hidden">
+{% if idea.id == 'daily-sales-report' %}
+    <div class="rounded-xl border border-slate-800 bg-slate-900 p-6">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-100">샘플 매출 데이터 입력</h3>
+          <p class="mt-1 text-xs text-slate-400">POS 연동 없이 입력값 기준으로 보고서와 카톡 메시지를 생성합니다.</p>
+        </div>
+      </div>
+
+      <form id="sr-form" class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm" autocomplete="off">
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">오늘 매출 (원)</span>
+          <input id="sr-today-sales" type="number" min="0" value="842000" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">오늘 객수 (명)</span>
+          <input id="sr-today-customers" type="number" min="0" value="76" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">전일 매출 (원)</span>
+          <input id="sr-yesterday-sales" type="number" min="0" value="735000" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">전주 동일 요일 매출 (원)</span>
+          <input id="sr-lastweek-sales" type="number" min="0" value="751000" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">가장 많이 팔린 메뉴</span>
+          <input id="sr-top-menu" type="text" value="아이스 아메리카노" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">마감 시간</span>
+          <input id="sr-close-time" type="time" value="21:00" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="md:col-span-2 flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">오늘 특이사항 <span class="text-slate-600">(선택)</span></span>
+          <textarea id="sr-note" rows="2" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500">점심 시간대 주문이 많았고, 저녁은 평소보다 조용했음</textarea>
+        </label>
+
+        <div class="md:col-span-2 flex items-center justify-end gap-2 pt-2">
+          <button id="sr-reset-btn" type="button" class="rounded-md border border-slate-700 text-slate-200 text-sm font-medium px-3 py-2 hover:bg-slate-800">기본값 복원</button>
+          <button id="sr-generate-btn" type="button" data-idea-id="{{ idea.id }}" data-idea-title="{{ idea.title }}" class="rounded-md bg-slate-100 text-slate-900 text-sm font-medium px-4 py-2 hover:bg-white">📊 보고서 생성</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="sr-empty" class="rounded-md border border-dashed border-slate-800 p-6 text-center text-xs text-slate-500">
+      매출과 객수를 입력하면 보고서를 생성할 수 있습니다.
+    </div>
+
+    <div id="sr-result" class="hidden space-y-4">
+      <!-- A. 오늘의 핵심 지표 -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">A. 오늘의 핵심 지표</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">오늘 매출</div>
+            <div id="sr-k-sales" class="mt-1 text-lg font-semibold text-slate-100"></div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">오늘 객수</div>
+            <div id="sr-k-customers" class="mt-1 text-lg font-semibold text-slate-100"></div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">객단가</div>
+            <div id="sr-k-avg" class="mt-1 text-lg font-semibold text-slate-100"></div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">가장 많이 팔린 메뉴</div>
+            <div id="sr-k-menu" class="mt-1 text-sm font-medium text-slate-100"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B. 비교 요약 -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">B. 비교 요약</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-4">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">전일 대비</div>
+            <div class="mt-1 flex items-baseline gap-2">
+              <span id="sr-c-yesterday-rate" class="text-lg font-semibold"></span>
+              <span id="sr-c-yesterday-diff" class="text-xs text-slate-400"></span>
+            </div>
+            <div id="sr-c-yesterday-base" class="mt-1 text-[11px] text-slate-500"></div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-4">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">전주 동일 요일 대비</div>
+            <div class="mt-1 flex items-baseline gap-2">
+              <span id="sr-c-lastweek-rate" class="text-lg font-semibold"></span>
+              <span id="sr-c-lastweek-diff" class="text-xs text-slate-400"></span>
+            </div>
+            <div id="sr-c-lastweek-base" class="mt-1 text-[11px] text-slate-500"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C. 자동 코멘트 -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">C. 자동 코멘트</div>
+        <p id="sr-comment" class="text-sm text-slate-200 leading-relaxed"></p>
+      </div>
+
+      <!-- D. 카톡 메시지 -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">D. 사장님에게 보낼 카톡 요약 메시지</div>
+          <button id="sr-copy-btn" type="button" class="text-[11px] text-slate-400 hover:text-slate-100">복사</button>
+        </div>
+        <div id="sr-kakao" class="rounded-md border border-slate-800 bg-slate-950 p-4 text-sm text-slate-100 whitespace-pre-wrap leading-relaxed"></div>
+        <p class="mt-2 text-[11px] text-slate-500">생성 시각: <span id="sr-time" class="text-slate-400"></span> · 마감 시간 기준: <span id="sr-close" class="text-slate-400"></span></p>
+      </div>
+    </div>
+{% else %}
     <div class="rounded-xl border border-slate-800 bg-slate-900 p-6">
       <div class="flex items-center justify-between gap-4">
         <div>
@@ -142,7 +256,9 @@
       <p class="text-sm text-slate-500">정리된 입력 예시가 없습니다.</p>
       {% endif %}
     </div>
+{% endif %}
 
+{% if idea.id != 'daily-sales-report' %}
     <div id="run-result" class="hidden space-y-4">
       <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
         <div class="flex items-center justify-between mb-2">
@@ -198,6 +314,13 @@
     <div class="rounded-md border border-amber-900/40 bg-amber-950/20 p-3 text-[11px] text-amber-200/80 leading-relaxed">
       ⓘ 이 화면은 실제 API 연동 전 단계입니다. 표시되는 모든 결과는 mock 시나리오입니다.
     </div>
+{% endif %}
+
+{% if idea.id == 'daily-sales-report' %}
+    <div class="rounded-md border border-amber-900/40 bg-amber-950/20 p-3 text-[11px] text-amber-200/80 leading-relaxed">
+      ⓘ 이 화면은 실제 API 연동 전 단계입니다. POS, 카카오톡 발송 연동은 하지 않으며, 모든 계산은 입력값 기준으로 브라우저에서 생성됩니다.
+    </div>
+{% endif %}
   </div>
 
   <!-- 탭: 다음 작업 -->
@@ -264,17 +387,17 @@
   const initial = (location.hash || '').replace('#','');
   if (['overview','plan','mock','next'].includes(initial)) showTab(initial);
 
-  // mock 실행
+  // mock 실행 (daily-sales-report 외 아이디어용)
   const btn = document.getElementById('run-btn');
   const placeholder = document.getElementById('run-placeholder');
   const result = document.getElementById('run-result');
-  const statusEl = document.getElementById('result-status');
-  const stepsEl = document.getElementById('result-steps');
-  const summaryEl = document.getElementById('result-summary');
-  const flowSec = document.getElementById('result-flow-section');
-  const messageSec = document.getElementById('result-message-section');
-  const messageEl = document.getElementById('result-message');
-  const timeEl = document.getElementById('result-time');
+  const statusEl = btn ? document.getElementById('result-status') : null;
+  const stepsEl = btn ? document.getElementById('result-steps') : null;
+  const summaryEl = btn ? document.getElementById('result-summary') : null;
+  const flowSec = btn ? document.getElementById('result-flow-section') : null;
+  const messageSec = btn ? document.getElementById('result-message-section') : null;
+  const messageEl = btn ? document.getElementById('result-message') : null;
+  const timeEl = btn ? document.getElementById('result-time') : null;
 
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -316,7 +439,7 @@
     } catch (_) {}
   }
 
-  btn.addEventListener('click', async () => {
+  if (btn) btn.addEventListener('click', async () => {
     const id = btn.dataset.ideaId;
     const title = btn.dataset.ideaTitle;
     placeholder.classList.add('hidden');
@@ -370,5 +493,200 @@
     }
   });
 })();
+
+{% if idea.id == 'daily-sales-report' %}
+(function(){
+  const form = document.getElementById('sr-form');
+  if (!form) return;
+  const genBtn = document.getElementById('sr-generate-btn');
+  const resetBtn = document.getElementById('sr-reset-btn');
+  const copyBtn = document.getElementById('sr-copy-btn');
+  const emptyEl = document.getElementById('sr-empty');
+  const resultEl = document.getElementById('sr-result');
+  const ideaId = genBtn.dataset.ideaId;
+  const ideaTitle = genBtn.dataset.ideaTitle;
+
+  const DEFAULTS = {
+    'sr-today-sales': '842000',
+    'sr-today-customers': '76',
+    'sr-yesterday-sales': '735000',
+    'sr-lastweek-sales': '751000',
+    'sr-top-menu': '아이스 아메리카노',
+    'sr-close-time': '21:00',
+    'sr-note': '점심 시간대 주문이 많았고, 저녁은 평소보다 조용했음'
+  };
+
+  function num(id){ const v = parseFloat(document.getElementById(id).value); return isFinite(v) ? v : 0; }
+  function str(id){ return (document.getElementById(id).value || '').trim(); }
+  function won(n){ return Math.round(n).toLocaleString('ko-KR') + '원'; }
+  function signed(n){ return (n > 0 ? '+' : n < 0 ? '-' : '') + Math.abs(Math.round(n)).toLocaleString('ko-KR') + '원'; }
+  function pct(n){
+    if (!isFinite(n)) return '0.0%';
+    const s = n > 0 ? '+' : n < 0 ? '-' : '';
+    return s + Math.abs(n).toFixed(1) + '%';
+  }
+  function formatTime(d){
+    const pad = x => String(x).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+  function delta(today, base){
+    if (!base || base <= 0) return { rate: null, diff: today - (base || 0) };
+    return { rate: ((today - base) / base) * 100, diff: today - base };
+  }
+  function setRate(elRate, elDiff, d){
+    if (d.rate === null) {
+      elRate.textContent = '비교 불가';
+      elRate.className = 'text-lg font-semibold text-slate-400';
+      elDiff.textContent = '';
+      return;
+    }
+    elRate.textContent = pct(d.rate);
+    elRate.className = 'text-lg font-semibold ' + (d.rate > 0 ? 'text-emerald-300' : d.rate < 0 ? 'text-rose-300' : 'text-slate-200');
+    elDiff.textContent = `(${signed(d.diff)})`;
+  }
+  function autoComment(yd, lwd){
+    const yUp = yd.rate !== null && yd.rate > 0;
+    const yDown = yd.rate !== null && yd.rate < 0;
+    const lUp = lwd.rate !== null && lwd.rate > 0;
+    const lDown = lwd.rate !== null && lwd.rate < 0;
+    if (yUp && lUp) return '전일과 전주 같은 요일 모두 매출이 상승했습니다. 오늘 잘 작동한 흐름을 내일도 유지해보면 좋겠습니다.';
+    if (yDown && lDown) return '전일과 전주 같은 요일 모두 매출이 하락했습니다. 시간대별 유입 동선과 메뉴 노출을 한 번 점검해볼 시점입니다.';
+    if ((yUp && lDown) || (yDown && lUp)) return '전일과 전주 같은 요일의 흐름이 서로 다릅니다. 단기 변화인지 추세 변화인지 며칠 더 지켜볼 필요가 있습니다.';
+    return '비교 기준값이 부족해 추세 판단이 어렵습니다. 며칠 더 데이터를 모아 비교해보면 좋겠습니다.';
+  }
+  function nextAction(yd, lwd){
+    const yUp = yd.rate !== null && yd.rate > 0;
+    const yDown = yd.rate !== null && yd.rate < 0;
+    const lUp = lwd.rate !== null && lwd.rate > 0;
+    const lDown = lwd.rate !== null && lwd.rate < 0;
+    if (yUp && lUp) return '내일은 오늘 잘 팔린 시간대의 흐름을 유지할 수 있도록 준비해보면 좋겠습니다.';
+    if (yDown && lDown) return '내일은 매출이 줄어든 시간대의 유입 동선과 메뉴 노출을 점검해보면 좋겠습니다.';
+    if (yUp && lDown) return '내일은 전주 대비 약했던 시간대를 보완할 수 있는 운영 방식을 확인해보면 좋겠습니다.';
+    if (yDown && lUp) return '내일은 전일 대비 빠진 시간대의 변화 원인을 확인해보면 좋겠습니다.';
+    return '내일은 핵심 시간대 매출을 좀 더 자세히 기록해보면 좋겠습니다.';
+  }
+  function buildKakao(d){
+    const lines = [];
+    const ratePart = [];
+    if (d.yesterday.rate !== null) ratePart.push(`전일보다 ${pct(d.yesterday.rate)}`);
+    if (d.lastweek.rate !== null) ratePart.push(`전주 같은 요일보다 ${pct(d.lastweek.rate)}`);
+    let head = `오늘 매출은 ${won(d.todaySales)}`;
+    if (ratePart.length) {
+      const tone = (d.yesterday.rate !== null && d.yesterday.rate >= 0) || (d.lastweek.rate !== null && d.lastweek.rate >= 0) ? '높았습니다' : '낮았습니다';
+      head += `으로 ${ratePart.join(', ')} ${tone}.`;
+    } else {
+      head += '입니다.';
+    }
+    lines.push(head);
+    lines.push(`객수는 ${d.customers}명, 객단가는 ${won(d.avgTicket)}입니다.`);
+    lines.push(`가장 많이 팔린 메뉴는 ${d.topMenu}였습니다.`);
+    if (d.note) lines.push(d.note);
+    lines.push(nextAction(d.yesterday, d.lastweek));
+    return lines.join('\n');
+  }
+  function saveHistory(data){
+    try {
+      const key = 'buttonMan.history.v1';
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      const steps = [
+        { label: `오늘 매출 ${won(data.todaySales)} (객수 ${data.customers}명)` },
+        { label: `객단가 ${won(data.avgTicket)} / 인기 메뉴: ${data.topMenu}` }
+      ];
+      if (data.yesterday.rate !== null) steps.push({ label: `전일 대비 ${pct(data.yesterday.rate)} (${signed(data.yesterday.diff)})` });
+      if (data.lastweek.rate !== null) steps.push({ label: `전주 동일 요일 대비 ${pct(data.lastweek.rate)} (${signed(data.lastweek.diff)})` });
+      list.unshift({
+        id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        executed_at: new Date().toISOString(),
+        idea_id: ideaId,
+        idea_title: ideaTitle,
+        run_type: 'mock',
+        status: 'success',
+        summary: data.summary,
+        inputs: data.inputs,
+        kakao_message: data.kakao,
+        payload: {
+          status: 'success',
+          execution_result: { steps: steps, summary: data.summary },
+          owner_message_sample: data.kakao,
+          finished_at: data.finishedAt
+        }
+      });
+      localStorage.setItem(key, JSON.stringify(list.slice(0, 100)));
+    } catch (_) {}
+  }
+  function generate(){
+    const todaySales = num('sr-today-sales');
+    const customers = num('sr-today-customers');
+    const yesterdaySales = num('sr-yesterday-sales');
+    const lastweekSales = num('sr-lastweek-sales');
+    const topMenu = str('sr-top-menu') || '집계 없음';
+    const closeTime = str('sr-close-time') || '미입력';
+    const note = str('sr-note');
+
+    if (todaySales <= 0 || customers <= 0) {
+      resultEl.classList.add('hidden');
+      emptyEl.classList.remove('hidden');
+      emptyEl.textContent = '매출과 객수를 입력하면 보고서를 생성할 수 있습니다.';
+      return;
+    }
+
+    const avgTicket = todaySales / customers;
+    const yd = delta(todaySales, yesterdaySales);
+    const lwd = delta(todaySales, lastweekSales);
+
+    document.getElementById('sr-k-sales').textContent = won(todaySales);
+    document.getElementById('sr-k-customers').textContent = customers.toLocaleString('ko-KR') + '명';
+    document.getElementById('sr-k-avg').textContent = won(avgTicket);
+    document.getElementById('sr-k-menu').textContent = topMenu;
+    setRate(document.getElementById('sr-c-yesterday-rate'), document.getElementById('sr-c-yesterday-diff'), yd);
+    document.getElementById('sr-c-yesterday-base').textContent = yesterdaySales > 0 ? `기준 ${won(yesterdaySales)}` : '전일 매출 없음';
+    setRate(document.getElementById('sr-c-lastweek-rate'), document.getElementById('sr-c-lastweek-diff'), lwd);
+    document.getElementById('sr-c-lastweek-base').textContent = lastweekSales > 0 ? `기준 ${won(lastweekSales)}` : '전주 매출 없음';
+    document.getElementById('sr-comment').textContent = autoComment(yd, lwd);
+
+    const data = {
+      todaySales, customers, avgTicket, topMenu, closeTime, note,
+      yesterday: yd, lastweek: lwd,
+      inputs: {
+        today_sales: todaySales,
+        today_customers: customers,
+        yesterday_sales: yesterdaySales,
+        lastweek_same_dow_sales: lastweekSales,
+        top_menu: topMenu,
+        close_time: closeTime,
+        note: note
+      }
+    };
+    data.kakao = buildKakao(data);
+    document.getElementById('sr-kakao').textContent = data.kakao;
+    const now = new Date();
+    data.finishedAt = formatTime(now);
+    document.getElementById('sr-time').textContent = data.finishedAt;
+    document.getElementById('sr-close').textContent = closeTime;
+
+    const parts = [`오늘 매출 ${won(todaySales)}`];
+    if (yd.rate !== null) parts.push(`전일 대비 ${pct(yd.rate)}`);
+    if (lwd.rate !== null) parts.push(`전주 동일 요일 대비 ${pct(lwd.rate)}`);
+    data.summary = parts.join(' · ');
+
+    emptyEl.classList.add('hidden');
+    resultEl.classList.remove('hidden');
+    saveHistory(data);
+  }
+
+  genBtn.addEventListener('click', generate);
+  resetBtn.addEventListener('click', () => {
+    Object.entries(DEFAULTS).forEach(([id, v]) => { const el = document.getElementById(id); if (el) el.value = v; });
+  });
+  copyBtn.addEventListener('click', async () => {
+    const text = document.getElementById('sr-kakao').textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      copyBtn.textContent = '복사됨';
+      setTimeout(() => { copyBtn.textContent = '복사'; }, 1500);
+    } catch (_) {}
+  });
+})();
+{% endif %}
 </script>
 {% endblock %}
