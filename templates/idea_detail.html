@@ -581,15 +581,16 @@
     if (!lines.length) return '';
     return lines.map((line, i) => i === lines.length - 1 ? refineLineEnding(line) : line + ',').join('\n');
   }
-  function dirPhraseEnd(prefix, rate){
-    if (rate > 0) return `${prefix} ${pct(rate)} 높았습니다`;
-    if (rate < 0) return `${prefix} ${pct(rate)} 낮았습니다`;
-    return `${prefix} 비슷한 수준이었습니다`;
+  function absPct(n){ return Math.abs(n).toFixed(1) + '%'; }
+  function dirPhraseEnd(base, rate){
+    if (rate > 0) return `${base}보다 ${pct(rate)} 높았습니다`;
+    if (rate < 0) return `${base}보다 ${absPct(rate)} 낮았습니다`;
+    return `${base}과 동일합니다`;
   }
-  function dirPhraseMid(prefix, rate){
-    if (rate > 0) return `${prefix} ${pct(rate)} 높고`;
-    if (rate < 0) return `${prefix} ${pct(rate)} 낮고`;
-    return `${prefix} 비슷하고`;
+  function dirPhraseMid(base, rate){
+    if (rate > 0) return `${base}보다 ${pct(rate)} 높고`;
+    if (rate < 0) return `${base}보다 ${absPct(rate)} 낮고`;
+    return `${base}과 동일하고`;
   }
   function salesLine(today, yh, lh){
     const hasY = yh.rate !== null, hasL = lh.rate !== null;
@@ -599,16 +600,16 @@
       const lDir = lh.rate > 0 ? 1 : lh.rate < 0 ? -1 : 0;
       if (yDir === lDir && yDir !== 0) {
         const verb = yDir > 0 ? '높았습니다' : '낮았습니다';
-        s += `으로\n전일보다 ${pct(yh.rate)},\n전주 같은 요일보다 ${pct(lh.rate)} ${verb}.`;
-      } else if (yDir === 0 && lDir === 0) {
-        s += `으로\n전일, 전주 같은 요일과 비슷한 수준이었습니다.`;
+        const yPart = yDir > 0 ? pct(yh.rate) : absPct(yh.rate);
+        const lPart = yDir > 0 ? pct(lh.rate) : absPct(lh.rate);
+        s += `으로\n전일보다 ${yPart},\n전주 같은 요일보다 ${lPart} ${verb}.`;
       } else {
-        s += `으로\n${dirPhraseMid('전일보다', yh.rate)},\n${dirPhraseEnd('전주 같은 요일보다', lh.rate)}.`;
+        s += `으로\n${dirPhraseMid('전일', yh.rate)},\n${dirPhraseEnd('전주 같은 요일', lh.rate)}.`;
       }
     } else if (hasY) {
-      s += `으로\n${dirPhraseEnd('전일보다', yh.rate)}.`;
+      s += `으로\n${dirPhraseEnd('전일', yh.rate)}.`;
     } else if (hasL) {
-      s += `으로\n${dirPhraseEnd('전주 같은 요일보다', lh.rate)}.`;
+      s += `으로\n${dirPhraseEnd('전주 같은 요일', lh.rate)}.`;
     } else {
       s += '입니다.';
     }
