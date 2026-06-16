@@ -219,10 +219,7 @@
       <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
         <div class="flex items-center justify-between mb-2">
           <div class="text-[10px] uppercase tracking-wider text-slate-500">D. 사장님에게 보낼 카톡 요약 메시지</div>
-          <div class="flex items-center gap-2">
-            <span id="sr-ai-status" class="text-[10px] text-slate-500"></span>
-            <button id="sr-copy-btn" type="button" class="text-[11px] text-slate-400 hover:text-slate-100">복사</button>
-          </div>
+          <button id="sr-copy-btn" type="button" class="text-[11px] text-slate-400 hover:text-slate-100">복사</button>
         </div>
         <div id="sr-kakao" class="rounded-md border border-slate-800 bg-slate-950 p-4 text-sm text-slate-100 whitespace-pre-wrap leading-relaxed"></div>
         <p class="mt-2 text-[11px] text-slate-500">생성 시각: <span id="sr-time" class="text-slate-400"></span> · 마감 시간 기준: <span id="sr-close" class="text-slate-400"></span></p>
@@ -557,60 +554,74 @@
     if ((yUp && lDown) || (yDown && lUp)) return '전일과 전주 같은 요일의 흐름이 서로 다릅니다. 단기 변화인지 추세 변화인지 며칠 더 지켜볼 필요가 있습니다.';
     return '비교 기준값이 부족해 추세 판단이 어렵습니다. 며칠 더 데이터를 모아 비교해보면 좋겠습니다.';
   }
+  function hasJongseong(str){
+    const last = String(str || '').trim().slice(-1);
+    if (!last) return false;
+    const code = last.charCodeAt(0);
+    if (code < 0xAC00 || code > 0xD7A3) return false;
+    return (code - 0xAC00) % 28 !== 0;
+  }
+  function withCopulaPast(name){
+    return hasJongseong(name) ? `${name}이었습니다` : `${name}였습니다`;
+  }
+  function refineLineEnding(line){
+    let s = String(line).trim().replace(/[.!?]+$/, '');
+    if (/(았|었|였)음$/.test(s)) s = s.replace(/(았|었|였)음$/, '$1습니다');
+    else if (/함$/.test(s)) s = s.replace(/함$/, '합니다');
+    else if (/임$/.test(s)) s = s.replace(/임$/, '입니다');
+    else if (/없음$/.test(s)) s = s.replace(/없음$/, '없습니다');
+    else if (/있음$/.test(s)) s = s.replace(/있음$/, '있습니다');
+    else if (/([가-힣])음$/.test(s)) s = s.replace(/음$/, '습니다');
+    if (!/[.!?]$/.test(s)) s += '.';
+    return s;
+  }
   function refineNote(note){
     if (!note) return '';
     const lines = note.split(',').map(s => s.trim()).filter(Boolean);
     if (!lines.length) return '';
-    return lines.map((line, i) => {
-      const isLast = i === lines.length - 1;
-      if (!isLast) return line + ',';
-      let last = line.replace(/(았|었|였)음(\.?)$/, '$1습니다.');
-      if (!/[.!?]$/.test(last)) last += '.';
-      return last;
-    }).join('\n');
+    return lines.map((line, i) => i === lines.length - 1 ? refineLineEnding(line) : line + ',').join('\n');
   }
-  function buildKakao(d){
-    const blocks = ['오늘 마감 요약입니다.'];
-    const yh = d.yesterday, lh = d.lastweek;
+  function dirPhraseEnd(prefix, rate){
+    if (rate > 0) return `${prefix} ${pct(rate)} 높았습니다`;
+    if (rate < 0) return `${prefix} ${pct(rate)} 낮았습니다`;
+    return `${prefix} 비슷한 수준이었습니다`;
+  }
+  function dirPhraseMid(prefix, rate){
+    if (rate > 0) return `${prefix} ${pct(rate)} 높고`;
+    if (rate < 0) return `${prefix} ${pct(rate)} 낮고`;
+    return `${prefix} 비슷하고`;
+  }
+  function salesLine(today, yh, lh){
     const hasY = yh.rate !== null, hasL = lh.rate !== null;
-    let s = `오늘 매출은 ${won(d.todaySales)}`;
+    let s = `오늘 매출은 ${won(today)}`;
     if (hasY && hasL) {
-      const sameDir = (yh.rate >= 0) === (lh.rate >= 0);
-      if (sameDir) {
-        const verb = yh.rate >= 0 ? '높았습니다' : '낮았습니다';
+      const yDir = yh.rate > 0 ? 1 : yh.rate < 0 ? -1 : 0;
+      const lDir = lh.rate > 0 ? 1 : lh.rate < 0 ? -1 : 0;
+      if (yDir === lDir && yDir !== 0) {
+        const verb = yDir > 0 ? '높았습니다' : '낮았습니다';
         s += `으로\n전일보다 ${pct(yh.rate)},\n전주 같은 요일보다 ${pct(lh.rate)} ${verb}.`;
+      } else if (yDir === 0 && lDir === 0) {
+        s += `으로\n전일, 전주 같은 요일과 비슷한 수준이었습니다.`;
       } else {
-        const yVerb = yh.rate >= 0 ? '높고' : '낮고';
-        const lVerb = lh.rate >= 0 ? '높았습니다' : '낮았습니다';
-        s += `으로\n전일보다 ${pct(yh.rate)} ${yVerb},\n전주 같은 요일보다 ${pct(lh.rate)} ${lVerb}.`;
+        s += `으로\n${dirPhraseMid('전일보다', yh.rate)},\n${dirPhraseEnd('전주 같은 요일보다', lh.rate)}.`;
       }
     } else if (hasY) {
-      const verb = yh.rate >= 0 ? '높았습니다' : '낮았습니다';
-      s += `으로\n전일보다 ${pct(yh.rate)} ${verb}.`;
+      s += `으로\n${dirPhraseEnd('전일보다', yh.rate)}.`;
     } else if (hasL) {
-      const verb = lh.rate >= 0 ? '높았습니다' : '낮았습니다';
-      s += `으로\n전주 같은 요일보다 ${pct(lh.rate)} ${verb}.`;
+      s += `으로\n${dirPhraseEnd('전주 같은 요일보다', lh.rate)}.`;
     } else {
       s += '입니다.';
     }
-    blocks.push(s);
+    return s;
+  }
+  function buildKakao(d){
+    const blocks = ['오늘 마감 요약입니다.'];
+    blocks.push(salesLine(d.todaySales, d.yesterday, d.lastweek));
     blocks.push(`객수는 ${d.customers}명,\n객단가는 ${won(d.avgTicket)}입니다.`);
-    blocks.push(`가장 많이 팔린 메뉴는 ${d.topMenu}였습니다.`);
+    blocks.push(`가장 많이 팔린 메뉴는 ${withCopulaPast(d.topMenu)}.`);
     const note = refineNote(d.note);
     if (note) blocks.push(note);
     return blocks.join('\n\n');
-  }
-  async function refineWithAI(text){
-    try {
-      const res = await fetch('/api/refine-message', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
-      });
-      if (!res.ok) return null;
-      const j = await res.json();
-      return (j && j.used && j.refined) ? j.refined : null;
-    } catch (_) { return null; }
   }
   function saveHistory(data){
     try {
@@ -699,19 +710,7 @@
 
     emptyEl.classList.add('hidden');
     resultEl.classList.remove('hidden');
-
-    const aiStatus = document.getElementById('sr-ai-status');
-    aiStatus.textContent = '문체 다듬는 중...';
-    refineWithAI(data.kakao).then(refined => {
-      if (refined && refined !== data.kakao) {
-        data.kakao = refined;
-        document.getElementById('sr-kakao').textContent = refined;
-        aiStatus.textContent = 'AI 다듬기 완료';
-      } else {
-        aiStatus.textContent = '';
-      }
-      saveHistory(data);
-    });
+    saveHistory(data);
   }
 
   genBtn.addEventListener('click', generate);
