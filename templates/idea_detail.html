@@ -219,7 +219,10 @@
       <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
         <div class="flex items-center justify-between mb-2">
           <div class="text-[10px] uppercase tracking-wider text-slate-500">D. 사장님에게 보낼 카톡 요약 메시지</div>
-          <button id="sr-copy-btn" type="button" class="text-[11px] text-slate-400 hover:text-slate-100">복사</button>
+          <div class="flex items-center gap-2">
+            <span id="sr-ai-status" class="text-[10px] text-slate-500"></span>
+            <button id="sr-copy-btn" type="button" class="text-[11px] text-slate-400 hover:text-slate-100">복사</button>
+          </div>
         </div>
         <div id="sr-kakao" class="rounded-md border border-slate-800 bg-slate-950 p-4 text-sm text-slate-100 whitespace-pre-wrap leading-relaxed"></div>
         <p class="mt-2 text-[11px] text-slate-500">생성 시각: <span id="sr-time" class="text-slate-400"></span> · 마감 시간 기준: <span id="sr-close" class="text-slate-400"></span></p>
@@ -597,6 +600,18 @@
     if (note) blocks.push(note);
     return blocks.join('\n\n');
   }
+  async function refineWithAI(text){
+    try {
+      const res = await fetch('/api/refine-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      if (!res.ok) return null;
+      const j = await res.json();
+      return (j && j.used && j.refined) ? j.refined : null;
+    } catch (_) { return null; }
+  }
   function saveHistory(data){
     try {
       const key = 'buttonMan.history.v1';
@@ -684,7 +699,19 @@
 
     emptyEl.classList.add('hidden');
     resultEl.classList.remove('hidden');
-    saveHistory(data);
+
+    const aiStatus = document.getElementById('sr-ai-status');
+    aiStatus.textContent = '문체 다듬는 중...';
+    refineWithAI(data.kakao).then(refined => {
+      if (refined && refined !== data.kakao) {
+        data.kakao = refined;
+        document.getElementById('sr-kakao').textContent = refined;
+        aiStatus.textContent = 'AI 다듬기 완료';
+      } else {
+        aiStatus.textContent = '';
+      }
+      saveHistory(data);
+    });
   }
 
   genBtn.addEventListener('click', generate);
