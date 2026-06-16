@@ -1,5 +1,5 @@
 {% extends "_base.html" %}
-{% from "_macros.html" import difficulty_badge, status_badge, status_legend %}
+{% from "_macros.html" import difficulty_badge, status_badge, status_legend, editable_status_badge %}
 {% block title %}아이디어뱅크{% endblock %}
 {% block page_title %}아이디어뱅크{% endblock %}
 {% block content %}
@@ -19,7 +19,7 @@
         <a href="/ideas/{{ idea.id }}" class="hover:text-white">{{ idea.title }}</a>
       </h3>
       <div class="flex shrink-0 items-center gap-1.5">
-        {{ status_badge(idea.status) }}
+        {{ editable_status_badge(idea.id, idea.status) }}
         {{ difficulty_badge(idea.difficulty) }}
       </div>
     </div>
@@ -215,6 +215,66 @@
       }
     });
   });
+})();
+
+(function(){
+  const KEY = 'buttonMan.statusOverride.v1';
+  const LABELS = { planning: '기획', ready: '실험 준비', running: '실험중', live: '운영 가능' };
+  const STYLES = {
+    planning: 'bg-slate-800 text-slate-300 border-slate-700',
+    ready: 'bg-blue-950/40 text-blue-300 border-blue-800/60',
+    running: 'bg-violet-950/40 text-violet-300 border-violet-800/60',
+    live: 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60'
+  };
+  const ALL_STYLE_CLASSES = Array.from(new Set(Object.values(STYLES).flatMap(s => s.split(/\s+/))));
+  function load(){ try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(_) { return {}; } }
+  function save(map){ localStorage.setItem(KEY, JSON.stringify(map)); }
+  function applyBadge(root, status){
+    const btn = root.querySelector('[data-status-trigger]');
+    const labelEl = root.querySelector('[data-status-label]');
+    ALL_STYLE_CLASSES.forEach(c => btn.classList.remove(c));
+    (STYLES[status] || STYLES.planning).split(/\s+/).forEach(c => btn.classList.add(c));
+    labelEl.textContent = LABELS[status] || status;
+    root.dataset.status = status;
+  }
+  function closeAllMenus(){ document.querySelectorAll('[data-status-menu]').forEach(m => m.classList.add('hidden')); }
+
+  const overrides = load();
+  document.querySelectorAll('[data-status-root]').forEach(root => {
+    const id = root.dataset.ideaId;
+    const def = root.dataset.defaultStatus;
+    if (overrides[id] && overrides[id] !== def) applyBadge(root, overrides[id]);
+    const trigger = root.querySelector('[data-status-trigger]');
+    const menu = root.querySelector('[data-status-menu]');
+    trigger.addEventListener('click', e => {
+      e.stopPropagation();
+      const wasHidden = menu.classList.contains('hidden');
+      closeAllMenus();
+      if (wasHidden) menu.classList.remove('hidden');
+    });
+    menu.querySelectorAll('[data-status-option]').forEach(opt => {
+      opt.addEventListener('click', e => {
+        e.stopPropagation();
+        const newStatus = opt.dataset.statusOption;
+        const map = load();
+        if (newStatus === def) delete map[id]; else map[id] = newStatus;
+        save(map);
+        applyBadge(root, newStatus);
+        menu.classList.add('hidden');
+      });
+    });
+    const resetBtn = menu.querySelector('[data-status-reset]');
+    if (resetBtn) resetBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      const map = load();
+      delete map[id];
+      save(map);
+      applyBadge(root, def);
+      menu.classList.add('hidden');
+    });
+  });
+  document.addEventListener('click', closeAllMenus);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllMenus(); });
 })();
 </script>
 {% endblock %}
