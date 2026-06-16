@@ -228,6 +228,148 @@
         <p class="mt-2 text-[11px] text-slate-500">생성 시각: <span id="sr-time" class="text-slate-400"></span> · 마감 시간 기준: <span id="sr-close" class="text-slate-400"></span></p>
       </div>
     </div>
+{% elif idea.id == 'stock-alert' %}
+    <div class="rounded-xl border border-slate-800 bg-slate-900 p-6">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-100">샘플 재고 데이터 입력</h3>
+          <p class="mt-1 text-xs text-slate-400">POS/발주처 연동 없이 입력값 기준으로 알림 메시지를 생성합니다.</p>
+        </div>
+      </div>
+
+      <form id="sa-form" class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm" autocomplete="off">
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">품목명</span>
+          <input id="sa-item-name" type="text" value="우유 200ml팩" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">단위</span>
+          <input id="sa-unit" type="text" value="개" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">현재 재고 수량</span>
+          <input id="sa-current" type="number" min="0" value="6" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">안전 재고 기준</span>
+          <input id="sa-safety" type="number" min="0" value="20" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">하루 평균 사용량</span>
+          <input id="sa-usage" type="number" min="0" value="12" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">발주 후 입고까지 걸리는 일수</span>
+          <input id="sa-lead" type="number" min="0" value="1" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">발주처명</span>
+          <input id="sa-vendor-name" type="text" value="서울식자재" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">발주처 연락처 또는 링크</span>
+          <input id="sa-vendor-contact" type="text" value="010-0000-0000" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="md:col-span-2 flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">오늘 특이사항 <span class="text-slate-600">(선택)</span></span>
+          <textarea id="sa-note" rows="2" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500">평일 오후 기준 소진 속도</textarea>
+        </label>
+
+        <div class="md:col-span-2 flex items-center justify-end gap-2 pt-2">
+          <button id="sa-reset-btn" type="button" class="rounded-md border border-slate-700 text-slate-200 text-sm font-medium px-3 py-2 hover:bg-slate-800">기본값 복원</button>
+          <button id="sa-generate-btn" type="button" data-idea-id="{{ idea.id }}" data-idea-title="{{ idea.title }}" class="rounded-md bg-slate-100 text-slate-900 text-sm font-medium px-4 py-2 hover:bg-white">📦 재고 알림 생성</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="sa-empty" class="rounded-md border border-dashed border-slate-800 p-6 text-center text-xs text-slate-500">
+      현재 재고·안전 재고·하루 평균 사용량·입고 소요일을 입력하면 알림을 생성할 수 있습니다.
+    </div>
+
+    <div id="sa-result" class="hidden space-y-4">
+      <!-- A. 재고 핵심 지표 -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">A. 재고 핵심 지표</div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">품목명</div>
+            <div id="sa-k-item" class="mt-1 text-sm font-medium text-slate-100"></div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">현재 재고</div>
+            <div id="sa-k-current" class="mt-1 text-lg font-semibold text-slate-100"></div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">안전 재고 기준</div>
+            <div id="sa-k-safety" class="mt-1 text-lg font-semibold text-slate-100"></div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">하루 평균 사용량</div>
+            <div id="sa-k-usage" class="mt-1 text-lg font-semibold text-slate-100"></div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">예상 소진일</div>
+            <div id="sa-k-exhaust" class="mt-1 text-lg font-semibold text-slate-100"></div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">입고 소요일</div>
+            <div id="sa-k-lead" class="mt-1 text-lg font-semibold text-slate-100"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B. 자동 판단 -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">B. 자동 판단</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-4">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">안전 재고 미달 여부</div>
+            <div id="sa-c-belowSafety" class="mt-1 text-sm font-medium"></div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-4">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">긴급 발주 여부</div>
+            <div id="sa-c-urgent" class="mt-1 text-sm font-medium"></div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-4">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">위험도</div>
+            <div class="mt-1"><span id="sa-c-risk" class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium"></span></div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-4">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">부족 수량 / 권장 발주 수량</div>
+            <div class="mt-1 text-sm text-slate-100"><span id="sa-c-short" class="text-rose-300"></span> <span class="text-slate-500">/</span> <span id="sa-c-recommended" class="font-semibold"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- C. 알림 메시지 -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">C. 사장님에게 보낼 알림 메시지</div>
+          <button id="sa-copy-btn" type="button" class="text-[11px] text-slate-400 hover:text-slate-100">복사</button>
+        </div>
+        <div id="sa-kakao" class="rounded-md border border-slate-800 bg-slate-950 p-4 text-sm text-slate-100 whitespace-pre-wrap leading-relaxed"></div>
+        <p class="mt-2 text-[11px] text-slate-500">생성 시각: <span id="sa-time" class="text-slate-400"></span></p>
+      </div>
+
+      <!-- 발주처 정보 -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">발주처 정보</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">발주처명</div>
+            <div id="sa-v-name" class="mt-1 text-slate-100"></div>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">연락처 / 링크</div>
+            <div id="sa-v-contact" class="mt-1 text-slate-100"></div>
+          </div>
+        </div>
+        <div class="mt-4 flex items-center justify-between gap-3">
+          <p id="sa-v-msg" class="text-[11px] text-slate-500 leading-relaxed">발주처 확인 버튼은 실제 발주를 실행하지 않습니다.</p>
+          <button id="sa-vendor-btn" type="button" class="shrink-0 rounded-md border border-slate-700 text-slate-200 text-sm font-medium px-3 py-2 hover:bg-slate-800">발주처 확인</button>
+        </div>
+      </div>
+    </div>
 {% else %}
     <div class="rounded-xl border border-slate-800 bg-slate-900 p-6">
       <div class="flex items-center justify-between gap-4">
@@ -261,7 +403,7 @@
     </div>
 {% endif %}
 
-{% if idea.id != 'daily-sales-report' %}
+{% if idea.id not in ['daily-sales-report', 'stock-alert'] %}
     <div id="run-result" class="hidden space-y-4">
       <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
         <div class="flex items-center justify-between mb-2">
@@ -319,9 +461,9 @@
     </div>
 {% endif %}
 
-{% if idea.id == 'daily-sales-report' %}
+{% if idea.id in ['daily-sales-report', 'stock-alert'] %}
     <div class="rounded-md border border-amber-900/40 bg-amber-950/20 p-3 text-[11px] text-amber-200/80 leading-relaxed">
-      ⓘ 이 화면은 실제 API 연동 전 단계입니다. POS, 카카오톡 발송 연동은 하지 않으며, 모든 계산은 입력값 기준으로 브라우저에서 생성됩니다.
+      ⓘ 이 화면은 실제 API 연동 전 단계입니다. POS, 카카오톡, 발주처 연동은 하지 않으며, 모든 계산은 입력값 기준으로 브라우저에서 생성됩니다.
     </div>
 {% endif %}
   </div>
@@ -726,6 +868,209 @@
       copyBtn.textContent = '복사됨';
       setTimeout(() => { copyBtn.textContent = '복사'; }, 1500);
     } catch (_) {}
+  });
+})();
+{% endif %}
+
+{% if idea.id == 'stock-alert' %}
+(function(){
+  const form = document.getElementById('sa-form');
+  if (!form) return;
+  const genBtn = document.getElementById('sa-generate-btn');
+  const resetBtn = document.getElementById('sa-reset-btn');
+  const copyBtn = document.getElementById('sa-copy-btn');
+  const vendorBtn = document.getElementById('sa-vendor-btn');
+  const vendorMsg = document.getElementById('sa-v-msg');
+  const emptyEl = document.getElementById('sa-empty');
+  const resultEl = document.getElementById('sa-result');
+  const ideaId = genBtn.dataset.ideaId;
+  const ideaTitle = genBtn.dataset.ideaTitle;
+
+  const DEFAULTS = {
+    'sa-item-name': '우유 200ml팩',
+    'sa-unit': '개',
+    'sa-current': '6',
+    'sa-safety': '20',
+    'sa-usage': '12',
+    'sa-lead': '1',
+    'sa-vendor-name': '서울식자재',
+    'sa-vendor-contact': '010-0000-0000',
+    'sa-note': '평일 오후 기준 소진 속도'
+  };
+
+  function num(id){ const v = parseFloat(document.getElementById(id).value); return isFinite(v) ? v : 0; }
+  function str(id){ return (document.getElementById(id).value || '').trim(); }
+  function qty(n, unit){ return Math.round(n).toLocaleString('ko-KR') + (unit || ''); }
+  function fmtTime(d){
+    const pad = x => String(x).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+  function riskOf(d){
+    if (d.currentStock <= d.safetyStock) {
+      if (d.exhaustDays !== null && d.exhaustDays <= d.leadTime) return 'high';
+      return 'medium';
+    }
+    return 'low';
+  }
+  function riskActionLine(risk){
+    if (risk === 'high') return '오늘 발주 확인이 필요합니다.';
+    if (risk === 'medium') return '이번 영업일 안에 발주 여부를 확인해보면 좋습니다.';
+    return '현재는 안전 기준보다 여유가 있습니다.';
+  }
+  function riskBadgeClass(risk){
+    if (risk === 'high') return 'bg-rose-950/40 text-rose-300 border-rose-800/60';
+    if (risk === 'medium') return 'bg-amber-950/40 text-amber-300 border-amber-800/60';
+    return 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60';
+  }
+  function riskLabel(risk){ return risk === 'high' ? '높음' : risk === 'medium' ? '보통' : '낮음'; }
+
+  function buildAlert(d, risk){
+    const blocks = ['재고 알림입니다.'];
+    let p1 = `${d.itemName} 재고가 현재 ${qty(d.currentStock, d.unit)}로,\n안전 기준 ${qty(d.safetyStock, d.unit)}`;
+    if (d.currentStock < d.safetyStock) p1 += '보다 낮습니다.';
+    else if (d.currentStock === d.safetyStock) p1 += '과 동일합니다.';
+    else p1 += '보다 여유가 있습니다.';
+    blocks.push(p1);
+
+    let p2;
+    if (d.exhaustDays === null) {
+      p2 = `사용량 정보가 없어 소진일 예측이 어렵습니다.\n입고까지 ${d.leadTime}일 정도 걸립니다.`;
+    } else {
+      p2 = `최근 사용량 기준으로 약 ${d.exhaustDays.toFixed(1)}일 뒤 소진될 수 있고,\n입고까지 ${d.leadTime}일 정도 걸립니다.`;
+    }
+    blocks.push(p2);
+
+    let p3 = riskActionLine(risk);
+    if (d.recommendedOrder > 0) p3 += `\n권장 발주 수량은 ${qty(d.recommendedOrder, d.unit)}입니다.`;
+    blocks.push(p3);
+
+    if (d.vendorName) blocks.push(`발주처: ${d.vendorName}`);
+    return blocks.join('\n\n');
+  }
+
+  function saveHistory(data){
+    try {
+      const key = 'buttonMan.history.v1';
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      const steps = [
+        { label: `${data.itemName}: 현재 ${qty(data.currentStock, data.unit)} / 안전 ${qty(data.safetyStock, data.unit)}` }
+      ];
+      if (data.exhaustDays !== null) steps.push({ label: `예상 소진일 약 ${data.exhaustDays.toFixed(1)}일 / 입고 ${data.leadTime}일` });
+      steps.push({ label: `위험도: ${riskLabel(data.risk)} / 권장 발주 ${qty(data.recommendedOrder, data.unit)}` });
+      list.unshift({
+        id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        executed_at: new Date().toISOString(),
+        idea_id: ideaId,
+        idea_title: ideaTitle,
+        run_type: 'mock',
+        status: 'success',
+        summary: data.summary,
+        inputs: data.inputs,
+        kakao_message: data.message,
+        payload: {
+          status: 'success',
+          execution_result: { steps: steps, summary: data.summary },
+          owner_message_sample: data.message,
+          finished_at: data.finishedAt
+        }
+      });
+      localStorage.setItem(key, JSON.stringify(list.slice(0, 100)));
+    } catch (_) {}
+  }
+
+  function generate(){
+    const itemName = str('sa-item-name') || '품목 미지정';
+    const unit = str('sa-unit') || '';
+    const currentStock = num('sa-current');
+    const safetyStock = num('sa-safety');
+    const dailyUsage = num('sa-usage');
+    const leadTime = num('sa-lead');
+    const vendorName = str('sa-vendor-name');
+    const vendorContact = str('sa-vendor-contact');
+    const note = str('sa-note');
+
+    if (currentStock <= 0 || safetyStock <= 0 || dailyUsage <= 0 || leadTime <= 0) {
+      resultEl.classList.add('hidden');
+      emptyEl.classList.remove('hidden');
+      emptyEl.textContent = '현재 재고·안전 재고·하루 평균 사용량·입고 소요일을 0보다 큰 값으로 입력해 주세요.';
+      return;
+    }
+
+    const exhaustDays = dailyUsage > 0 ? currentStock / dailyUsage : null;
+    const shortage = Math.max(0, safetyStock - currentStock);
+    const recommendedOrder = Math.max(0, (safetyStock - currentStock) + (dailyUsage * leadTime));
+
+    const data = {
+      itemName, unit, currentStock, safetyStock, dailyUsage, leadTime,
+      vendorName, vendorContact, note,
+      exhaustDays, shortage, recommendedOrder
+    };
+    const risk = riskOf(data);
+    data.risk = risk;
+
+    document.getElementById('sa-k-item').textContent = itemName;
+    document.getElementById('sa-k-current').textContent = qty(currentStock, unit);
+    document.getElementById('sa-k-safety').textContent = qty(safetyStock, unit);
+    document.getElementById('sa-k-usage').textContent = qty(dailyUsage, unit) + '/일';
+    document.getElementById('sa-k-exhaust').textContent = exhaustDays !== null ? exhaustDays.toFixed(1) + '일' : '계산 불가';
+    document.getElementById('sa-k-lead').textContent = leadTime + '일';
+
+    const belowSafety = currentStock <= safetyStock;
+    const urgent = exhaustDays !== null && exhaustDays <= leadTime;
+    const bsEl = document.getElementById('sa-c-belowSafety');
+    bsEl.textContent = belowSafety ? '미달 (현재 ≤ 안전 기준)' : '여유 있음 (현재 > 안전 기준)';
+    bsEl.className = 'mt-1 text-sm font-medium ' + (belowSafety ? 'text-rose-300' : 'text-emerald-300');
+    const uEl = document.getElementById('sa-c-urgent');
+    uEl.textContent = urgent ? '필요 (예상 소진 ≤ 입고 소요일)' : '여유 (예상 소진 > 입고 소요일)';
+    uEl.className = 'mt-1 text-sm font-medium ' + (urgent ? 'text-rose-300' : 'text-emerald-300');
+    const riskEl = document.getElementById('sa-c-risk');
+    riskEl.textContent = riskLabel(risk);
+    riskEl.className = 'inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ' + riskBadgeClass(risk);
+    document.getElementById('sa-c-short').textContent = qty(shortage, unit);
+    document.getElementById('sa-c-recommended').textContent = qty(recommendedOrder, unit);
+
+    data.message = buildAlert(data, risk);
+    document.getElementById('sa-kakao').textContent = data.message;
+    const now = new Date();
+    data.finishedAt = fmtTime(now);
+    document.getElementById('sa-time').textContent = data.finishedAt;
+
+    document.getElementById('sa-v-name').textContent = vendorName || '미입력';
+    document.getElementById('sa-v-contact').textContent = vendorContact || '미입력';
+
+    const orderNeeded = (risk === 'high' || risk === 'medium') ? '필요' : '여유';
+    data.summary = `${itemName} · 위험도 ${riskLabel(risk)} · 예상 소진 ${exhaustDays !== null ? exhaustDays.toFixed(1) + '일' : 'N/A'} · 발주 ${orderNeeded}`;
+    data.inputs = {
+      item_name: itemName, unit, current_stock: currentStock, safety_stock: safetyStock,
+      daily_usage: dailyUsage, lead_time: leadTime,
+      vendor_name: vendorName, vendor_contact: vendorContact, note
+    };
+
+    emptyEl.classList.add('hidden');
+    resultEl.classList.remove('hidden');
+    saveHistory(data);
+  }
+
+  genBtn.addEventListener('click', generate);
+  resetBtn.addEventListener('click', () => {
+    Object.entries(DEFAULTS).forEach(([id, v]) => { const el = document.getElementById(id); if (el) el.value = v; });
+  });
+  copyBtn.addEventListener('click', async () => {
+    const text = document.getElementById('sa-kakao').textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      copyBtn.textContent = '복사됨';
+      setTimeout(() => { copyBtn.textContent = '복사'; }, 1500);
+    } catch (_) {}
+  });
+  vendorBtn.addEventListener('click', () => {
+    vendorMsg.textContent = 'mock 단계에서는 실제 발주가 실행되지 않습니다.';
+    vendorMsg.className = 'text-[11px] text-amber-300 leading-relaxed';
+    clearTimeout(vendorMsg._t);
+    vendorMsg._t = setTimeout(() => {
+      vendorMsg.textContent = '발주처 확인 버튼은 실제 발주를 실행하지 않습니다.';
+      vendorMsg.className = 'text-[11px] text-slate-500 leading-relaxed';
+    }, 3000);
   });
 })();
 {% endif %}
