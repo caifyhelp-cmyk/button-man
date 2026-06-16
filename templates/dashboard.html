@@ -186,6 +186,21 @@
             messageSec.classList.remove('hidden');
             messageEl.textContent = data.owner_message_sample;
           }
+          try {
+            const key = 'buttonMan.history.v1';
+            const list = JSON.parse(localStorage.getItem(key) || '[]');
+            list.unshift({
+              id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+              executed_at: new Date().toISOString(),
+              idea_id: id,
+              idea_title: title,
+              run_type: 'mock',
+              status: 'success',
+              summary: (data.execution_result && data.execution_result.summary) || '',
+              payload: data
+            });
+            localStorage.setItem(key, JSON.stringify(list.slice(0, 100)));
+          } catch (_) {}
         } else {
           stepsEl.innerHTML = `<li class="text-rose-400">아이디어 ID를 찾지 못했습니다: ${escapeHtml(id)}</li>`;
           summaryEl.textContent = '';
