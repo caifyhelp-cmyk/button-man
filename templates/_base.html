@@ -19,15 +19,13 @@
         </div>
       </div>
       <nav class="flex-1 px-3 py-4 space-y-1 text-sm">
-        {% if active == 'ideas' %}
-          <a href="/" class="block rounded-md px-3 py-2 bg-slate-800 text-slate-100 font-medium">아이디어뱅크</a>
-        {% else %}
-          <a href="/" class="block rounded-md px-3 py-2 text-slate-300 hover:bg-slate-800/60 hover:text-slate-100">아이디어뱅크</a>
-        {% endif %}
-        <span class="block rounded-md px-3 py-2 text-slate-500 cursor-not-allowed">실행 이력 <span class="ml-1 text-[10px] uppercase tracking-wider text-slate-600">준비중</span></span>
-        <span class="block rounded-md px-3 py-2 text-slate-500 cursor-not-allowed">설정 <span class="ml-1 text-[10px] uppercase tracking-wider text-slate-600">준비중</span></span>
+        {% set nav_active = 'block rounded-md px-3 py-2 bg-slate-800 text-slate-100 font-medium' %}
+        {% set nav_idle = 'block rounded-md px-3 py-2 text-slate-300 hover:bg-slate-800/60 hover:text-slate-100' %}
+        <a href="/" class="{{ nav_active if active == 'ideas' else nav_idle }}">아이디어뱅크</a>
+        <a href="/history" class="{{ nav_active if active == 'history' else nav_idle }}">실행 이력</a>
+        <a href="/settings" class="{{ nav_active if active == 'settings' else nav_idle }}">설정</a>
       </nav>
-      <div class="px-5 py-4 text-xs text-slate-500 border-t border-slate-800">v0.3.0 · MVP</div>
+      <div class="px-5 py-4 text-xs text-slate-500 border-t border-slate-800">v0.4.0 · MVP</div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0">
