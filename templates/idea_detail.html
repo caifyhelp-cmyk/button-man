@@ -42,27 +42,30 @@
   <div id="tab-overview" class="tab-panel mt-5 space-y-4">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">한 줄 요약</div>
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">요약</div>
         <p class="text-sm text-slate-200 leading-relaxed">{{ idea.description }}</p>
       </div>
       <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">예상 사용자</div>
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">타겟</div>
         <p class="text-sm text-slate-200 leading-relaxed">{{ idea.target_user }}</p>
       </div>
-      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">현재 상태</div>
-        <div class="text-sm text-slate-200">{{ editable_status_badge(idea.id, idea.status) }}</div>
-      </div>
-      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">난이도</div>
-        <div class="text-sm text-slate-200">{{ difficulty_badge(idea.difficulty) }}</div>
-      </div>
     </div>
-    <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-      <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">이 아이디어를 보는 이유</div>
-      <p class="text-sm text-slate-200 leading-relaxed">
+    <div class="rounded-xl border border-slate-800 bg-slate-900 p-5"
+         data-why-root data-idea-id="{{ idea.id }}"
+         data-default-why="{{ idea.why_this_idea or '' }}">
+      <div class="flex items-start justify-between gap-2 mb-2">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500">이 아이디어를 보는 이유</div>
+        <div class="flex items-center gap-3 text-[11px]">
+          <button type="button" data-why-edit class="text-slate-400 hover:text-slate-100">수정</button>
+          <button type="button" data-why-cancel class="hidden text-slate-400 hover:text-slate-100">취소</button>
+          <button type="button" data-why-save class="hidden text-emerald-300 hover:text-emerald-200 font-medium">저장</button>
+        </div>
+      </div>
+      <p data-why-view class="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap min-h-[1.25em]">
         {% if idea.why_this_idea %}{{ idea.why_this_idea }}{% else %}<span class="text-slate-500">아직 정리되지 않았습니다.</span>{% endif %}
       </p>
+      <textarea data-why-textarea rows="4" placeholder="기획자가 왜 이 아이디어를 후보로 올렸는지 적어두세요." class="hidden w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 leading-relaxed focus:outline-none focus:border-slate-500"></textarea>
+      <p data-why-hint class="hidden mt-2 text-[10px] text-slate-500">저장하면 이 브라우저(localStorage)에 보관됩니다.</p>
     </div>
   </div>
 
@@ -788,6 +791,66 @@
   });
   document.addEventListener('click', closeAllMenus);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAllMenus(); });
+})();
+
+(function(){
+  const KEY = 'buttonMan.whyOverride.v1';
+  function load(){ try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(_) { return {}; } }
+  function save(map){ localStorage.setItem(KEY, JSON.stringify(map)); }
+
+  document.querySelectorAll('[data-why-root]').forEach(root => {
+    const id = root.dataset.ideaId;
+    const def = root.dataset.defaultWhy || '';
+    const viewEl = root.querySelector('[data-why-view]');
+    const ta = root.querySelector('[data-why-textarea]');
+    const editBtn = root.querySelector('[data-why-edit]');
+    const saveBtn = root.querySelector('[data-why-save]');
+    const cancelBtn = root.querySelector('[data-why-cancel]');
+    const hint = root.querySelector('[data-why-hint]');
+
+    function effectiveValue(){
+      const m = load();
+      return (m[id] !== undefined) ? m[id] : def;
+    }
+    function renderView(){
+      const v = effectiveValue();
+      if (v && v.trim()) {
+        viewEl.textContent = v;
+      } else {
+        viewEl.innerHTML = '<span class="text-slate-500">아직 정리되지 않았습니다.</span>';
+      }
+    }
+    function showEdit(){
+      ta.value = effectiveValue();
+      viewEl.classList.add('hidden');
+      ta.classList.remove('hidden');
+      hint.classList.remove('hidden');
+      editBtn.classList.add('hidden');
+      saveBtn.classList.remove('hidden');
+      cancelBtn.classList.remove('hidden');
+      ta.focus();
+    }
+    function hideEdit(){
+      ta.classList.add('hidden');
+      hint.classList.add('hidden');
+      viewEl.classList.remove('hidden');
+      saveBtn.classList.add('hidden');
+      cancelBtn.classList.add('hidden');
+      editBtn.classList.remove('hidden');
+    }
+
+    renderView();
+    editBtn.addEventListener('click', showEdit);
+    cancelBtn.addEventListener('click', hideEdit);
+    saveBtn.addEventListener('click', () => {
+      const val = ta.value.trim();
+      const map = load();
+      if (!val || val === def) delete map[id]; else map[id] = val;
+      save(map);
+      renderView();
+      hideEdit();
+    });
+  });
 })();
 </script>
 {% endblock %}
