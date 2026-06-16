@@ -21,6 +21,20 @@
   'running': 'bg-violet-950/40 text-violet-300 border-violet-800/60',
   'paused': 'bg-amber-950/40 text-amber-300 border-amber-800/60'
 } %}
+{% set status_short = {
+  'planning': '아이디어와 기획 내용만 정리된 상태. mock 구현·검토는 아직 시작 전.',
+  'reviewing': '기획의 실현 가능성과 필요 데이터를 살펴보는 단계. 실험 진입 여부를 결정하기 전.',
+  'ready': '검토를 마치고 mock 시연이 바로 가능한 상태. 실행만 누르면 보고서·메시지가 나옴.',
+  'running': 'mock 결과를 보면서 문구·계산·UI를 다듬는 고도화 진행 단계.',
+  'paused': '이전에 진행 중이었으나 우선순위·결정 사유로 잠시 멈춰 둔 상태.'
+} %}
+{% set status_meaning = {
+  'planning': '아이디어와 기획만 정리됨 (아무 구현도 시작 전)',
+  'reviewing': '기획 정합성·필요 데이터를 검토하는 중',
+  'ready': 'mock 시연이 가능한 상태로 정리 완료',
+  'running': 'mock 결과를 보며 문구·계산·UI를 고도화 중',
+  'paused': '진행 중이었으나 일시 중단'
+} %}
 
 {% macro difficulty_badge(difficulty) -%}
   <span class="shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium {{ difficulty_styles.get(difficulty, 'bg-slate-800 text-slate-300 border-slate-700') }}">
@@ -29,7 +43,32 @@
 {%- endmacro %}
 
 {% macro status_badge(status) -%}
-  <span class="shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium {{ status_styles.get(status, 'bg-slate-800 text-slate-300 border-slate-700') }}">
+  <span title="{{ status_labels.get(status, status) }} · {{ status_short.get(status, '') }}" class="shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium {{ status_styles.get(status, 'bg-slate-800 text-slate-300 border-slate-700') }}">
     {{ status_labels.get(status, status) }}
   </span>
+{%- endmacro %}
+
+{% macro status_legend() -%}
+<details class="rounded-xl border border-slate-800 bg-slate-900 p-4">
+  <summary class="cursor-pointer text-xs text-slate-300 select-none flex items-center gap-2">
+    <span class="text-slate-500">ⓘ</span>
+    <span>진행 상태 뱃지 의미 보기</span>
+    <span class="ml-auto text-[10px] text-slate-500">기획 · 검토중 · 실험 준비 · 실험중 · 보류</span>
+  </summary>
+  <ul class="mt-4 space-y-3 text-xs">
+    {% for key in ['planning', 'reviewing', 'ready', 'running', 'paused'] %}
+    <li class="flex items-start gap-3">
+      <span class="shrink-0 mt-0.5 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium {{ status_styles[key] }}">{{ status_labels[key] }}</span>
+      <div class="text-slate-300 leading-relaxed">
+        <div class="font-medium text-slate-200">{{ status_meaning[key] }}</div>
+        <div class="mt-0.5 text-slate-400">{{ status_short[key] }}</div>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-500 leading-relaxed">
+    <span class="text-slate-400">단계 흐름:</span>
+    기획 → 검토중 → 실험 준비 → 실험중 (중간에 멈추면 보류)
+  </div>
+</details>
 {%- endmacro %}
