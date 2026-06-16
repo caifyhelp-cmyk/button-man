@@ -47,5 +47,15 @@ def api_run(idea_id):
     return jsonify(result), status
 
 
+@app.route('/history')
+def history():
+    return render_template('history.html', active='history')
+
+
+@app.route('/settings')
+def settings():
+    return render_template('settings.html', active='settings')
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', '8080')), debug=True)
