@@ -1,5 +1,5 @@
 {% extends "_base.html" %}
-{% from "_macros.html" import difficulty_badge, status_badge %}
+{% from "_macros.html" import difficulty_badge, status_badge, status_legend %}
 {% block title %}아이디어뱅크{% endblock %}
 {% block page_title %}아이디어뱅크{% endblock %}
 {% block content %}
@@ -8,6 +8,8 @@
   <h2 class="text-sm font-semibold text-slate-100">실험실에 등록된 자동화 아이디어 {{ ideas|length }}개</h2>
   <p class="mt-1 text-xs text-slate-400">카드를 눌러 상세 페이지에서 기획을 확인하거나, 바로 mock 실행으로 결과를 미리 볼 수 있습니다.</p>
 </section>
+
+{{ status_legend() }}
 
 <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
   {% for idea in ideas %}
