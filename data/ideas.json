@@ -82,7 +82,7 @@
       "description": "마감 시각에 어제·전주·동요일 평균 대비 차이를 자동 비교해 한 줄 코멘트와 함께 보냅니다.",
       "target_user": "매장 운영자, 본사 관리자",
       "difficulty": "medium",
-      "status": "reviewing",
+      "status": "running",
       "problem": "매장 닫고 정산 끝나면 이미 밤 11시. 추세나 이상치를 따로 정리할 여유가 없다.",
       "solution": "마감 시각에 POS 데이터 자동 집계 → 비교 지표(전일·전주·동요일) 계산 → LLM 한 줄 코멘트 생성 → 카톡 발송.",
       "validation": "사장님이 21시 전에 보고서 확인하는 비율 70% 이상.",
