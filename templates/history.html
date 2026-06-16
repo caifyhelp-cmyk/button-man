@@ -123,14 +123,24 @@
           </div>
           <p class="mt-1 text-xs text-slate-400 leading-relaxed line-clamp-2">${escapeHtml(it.summary || '')}</p>
         </div>
-        <div class="shrink-0">
+        <div class="shrink-0 flex items-center gap-2">
           <button type="button" data-replay-id="${escapeHtml(it.id)}" class="rounded-md border border-slate-700 text-slate-200 text-xs font-medium px-3 py-1.5 hover:bg-slate-800">다시 보기</button>
+          <button type="button" data-delete-id="${escapeHtml(it.id)}" class="rounded-md border border-rose-900/60 text-rose-300 text-xs font-medium px-3 py-1.5 hover:bg-rose-950/40">삭제</button>
         </div>
       </div>
     `).join('');
     listEl.querySelectorAll('[data-replay-id]').forEach(b => {
       b.addEventListener('click', () => openReplay(b.dataset.replayId));
     });
+    listEl.querySelectorAll('[data-delete-id]').forEach(b => {
+      b.addEventListener('click', () => deleteItem(b.dataset.deleteId));
+    });
+  }
+  function deleteItem(id){
+    if (!confirm('이 실행 기록을 삭제할까요?')) return;
+    const items = load().filter(x => x.id !== id);
+    localStorage.setItem(KEY, JSON.stringify(items));
+    render();
   }
   function openReplay(id){
     const items = load();
