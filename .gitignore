@@ -11,3 +11,8 @@ env/
 .DS_Store
 .idea/
 .vscode/
+
+# QA Agent — local-only inputs and results
+qa-inputs/*
+!qa-inputs/.gitkeep
+!qa-inputs/README.md
