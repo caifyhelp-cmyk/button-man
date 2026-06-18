@@ -75,6 +75,14 @@ def run_qa(job_id: str, inputs_dir: str = "qa-inputs") -> dict:
         "detectedWrongIndustry": bool(analysis.get("detectedWrongIndustry", False)),
         "detectedVisualTextIssue": bool(analysis.get("detectedVisualTextIssue", False)),
         "detectedAudioScriptMismatch": bool(analysis.get("detectedAudioScriptMismatch", False)),
+        "detectedFloatingObjects": bool(analysis.get("detectedFloatingObjects", False)),
+        "detectedSpatialDistortion": bool(analysis.get("detectedSpatialDistortion", False)),
+        "detectedIrrelevantObjects": bool(analysis.get("detectedIrrelevantObjects", False)),
+        "detectedDuplicateScenes": bool(analysis.get("detectedDuplicateScenes", False)),
+        "detectedForeignLanguageTTS": bool(
+            analysis.get("detectedForeignLanguageTTS",
+                         analysis.get("detectedForeignLanguage", False))
+        ),
         "sttText": stt["text"],
         "sttLanguage": stt["language"],
         "frameSummary": [
@@ -82,6 +90,16 @@ def run_qa(job_id: str, inputs_dir: str = "qa-inputs") -> dict:
              "offsetSec": round(t, 2)}
             for p, t in frames
         ],
+        "sceneDiversityScore": analysis.get("sceneDiversityScore"),
+        "duplicateSceneRanges": analysis.get("duplicateSceneRanges", []),
+        "visualAnomalyFrames": analysis.get("visualAnomalyFrames", []),
+        "irrelevantObjectFindings": analysis.get("irrelevantObjectFindings", []),
+        "audioLanguageSummary": analysis.get("audioLanguageSummary", {
+            "primary": stt["language"], "confidence": None,
+            "detectedSecondary": [], "foreignSegments": [],
+        }),
+        "visualQaSummary": analysis.get("visualQaSummary", []),
+        "sceneQaSummary": analysis.get("sceneQaSummary", []),
         "retryPrompt": analysis.get("retryPrompt", ""),
         "humanReviewReason": analysis.get("humanReviewReason", ""),
         "checkedAt": datetime.now(timezone.utc).isoformat(),

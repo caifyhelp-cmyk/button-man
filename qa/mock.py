@@ -1,13 +1,34 @@
 """Heuristic mock QA backend — no ffmpeg/STT/LLM.
 
-Same return schema as qa/runner.py. Used by the web route /api/qa/run during MVP
-so the UI and data flow can be exercised end-to-end before real analysis is wired in.
+Same return schema as qa/runner.py + multimodal extensions. Used by /api/qa/run
+during MVP so the UI and data flow can be exercised without real analysis.
+
+Mock honesty policy:
+- Fields whose signal requires actual frame analysis (floating objects, spatial
+  distortion, scene similarity, visual anomalies) default to false/empty, with
+  visualQaSummary entries explicitly marked "(mock — 실제 모델 분석 미수행)".
+- Fields that *can* be inferred from text inputs (scene-line duplication, foreign
+  language in script, industry-incompatible nouns) are heuristically flagged.
 """
 from __future__ import annotations
 
 import re
 from datetime import datetime, timezone
 from typing import Any
+
+
+# Per-industry incompatible noun shortlist for the irrelevant-object heuristic.
+# Real implementation will be vision-driven; this is a coarse text proxy.
+_INDUSTRY_INCOMPATIBLE: dict[str, list[str]] = {
+    "동물병원": ["자동차", "비행기", "건설현장", "공장", "주방"],
+    "치과": ["자동차", "비행기", "공사장", "주방", "공장"],
+    "한의원": ["자동차", "비행기", "주방", "공장"],
+    "미용실": ["공장", "건설현장", "트럭", "수술실"],
+    "카페": ["수술실", "공장", "건설현장", "트럭"],
+    "음식점": ["수술실", "병실", "공사장"],
+    "학원": ["수술실", "공장", "술집", "주방"],
+    "헬스장": ["수술실", "공장", "주방"],
+}
 
 
 def _find_forbidden(text: str, forbidden_list: list[str]) -> list[str]:
@@ -32,6 +53,112 @@ def _detect_brand_mixing(text: str, client_name: str) -> list[str]:
     return sorted({t for t in tokens if t.lower() not in cn_lower})[:5]
 
 
+def _analyze_scenes_text(scenes_text: str) -> dict[str, Any]:
+    """Parse the scenes textarea by lines and detect duplicates."""
+    if not scenes_text or not scenes_text.strip():
+        return {
+            "lines": [],
+            "uniqueCount": 0,
+            "totalCount": 0,
+            "diversityScore": None,
+            "duplicateGroups": [],
+        }
+    lines = [l.strip() for l in scenes_text.splitlines() if l.strip()]
+    counts: dict[str, list[int]] = {}
+    for idx, l in enumerate(lines):
+        counts.setdefault(l, []).append(idx)
+    duplicate_groups = [
+        {"line": k, "indices": v, "count": len(v)}
+        for k, v in counts.items() if len(v) > 1
+    ]
+    unique = len(counts)
+    total = len(lines)
+    diversity = round((unique / total) * 100, 1) if total else None
+    return {
+        "lines": lines,
+        "uniqueCount": unique,
+        "totalCount": total,
+        "diversityScore": diversity,
+        "duplicateGroups": duplicate_groups,
+    }
+
+
+def _find_irrelevant_objects(industry: str, script: str) -> list[dict[str, Any]]:
+    if not industry or not script:
+        return []
+    incompat = _INDUSTRY_INCOMPATIBLE.get(industry.strip(), [])
+    findings: list[dict[str, Any]] = []
+    for word in incompat:
+        if word in script:
+            findings.append({
+                "offsetSec": None,
+                "object": word,
+                "expectedContext": industry,
+                "severity": "medium",
+                "source": "script-keyword",
+            })
+    return findings
+
+
+def _build_audio_summary(script: str, foreign_detected: bool) -> dict[str, Any]:
+    if foreign_detected:
+        return {
+            "primary": "unknown",
+            "confidence": 0.4,
+            "detectedSecondary": ["ko"],
+            "foreignSegments": [{
+                "startSec": 0.0,
+                "endSec": None,
+                "language": "unknown",
+                "note": "(mock — 대본에 한국어가 거의 없습니다. 실제 STT 필요)",
+            }],
+            "sttMode": "mock",
+        }
+    return {
+        "primary": "ko",
+        "confidence": 0.95 if script else 0.5,
+        "detectedSecondary": [],
+        "foreignSegments": [],
+        "sttMode": "mock",
+    }
+
+
+def _build_visual_qa_summary(offsets: list[float]) -> list[dict[str, Any]]:
+    return [
+        {
+            "offsetSec": float(o),
+            "observations": ["(mock — 실제 비전 모델 분석 미수행)"],
+            "spatialOk": None,
+            "floatingObjects": [],
+            "score": None,
+        }
+        for o in offsets
+    ]
+
+
+def _build_scene_qa_summary(scene_lines: list[str], industry: str) -> list[dict[str, Any]]:
+    if not scene_lines:
+        return [{
+            "sceneIdx": 0,
+            "description": "(scenes 입력 없음)",
+            "expectedThemes": [industry] if industry else [],
+            "observedThemes": [],
+            "matchesIntent": None,
+            "note": "씬 정보가 비어 있어 mock 모드에서는 비교할 수 없습니다.",
+        }]
+    return [
+        {
+            "sceneIdx": i,
+            "description": line,
+            "expectedThemes": [industry] if industry else [],
+            "observedThemes": [],
+            "matchesIntent": None,
+            "note": "(mock — 실제 비전 모델로 관찰된 테마 채울 자리)",
+        }
+        for i, line in enumerate(scene_lines)
+    ]
+
+
 def _build_retry_prompt(client_info: dict, critical: list[str]) -> str:
     name = client_info.get("clientName") or "(고객사명 미입력)"
     industry = client_info.get("industry") or "(업종 미입력)"
@@ -41,7 +168,10 @@ def _build_retry_prompt(client_info: dict, critical: list[str]) -> str:
     tone = client_info.get("brandTone") or ""
 
     lines = [f"[재생성 요청] {name} ({industry})", "", "## 이번 영상에서 수정할 점"]
-    lines.extend(f"- {c}" for c in critical) if critical else lines.append("- (자동 감지된 문제 없음)")
+    if critical:
+        lines.extend(f"- {c}" for c in critical)
+    else:
+        lines.append("- (자동 감지된 치명 문제 없음 — 사람 검수 사유 별도 확인)")
     lines.extend(["", "## 반드시 지킬 것", f"- 고객사명: {name}", f"- 업종: {industry}"])
     if services:
         lines.append(f"- 다룰 서비스: {', '.join(services[:5])}")
@@ -53,8 +183,14 @@ def _build_retry_prompt(client_info: dict, critical: list[str]) -> str:
         lines.append(f"- 브랜드 톤: {tone}")
     lines.extend([
         "",
-        "## 원칙",
-        "- 다른 회사명, 다른 업종 장면, 외국어 TTS는 사용하지 않습니다.",
+        "## 시각 / 장면 원칙",
+        "- 공중에 떠 있거나 바닥에 자연스럽게 놓이지 않은 가구·물체가 없어야 합니다.",
+        "- 벽·천장·가구 비율의 비정상적 왜곡, 합성 아티팩트가 없어야 합니다.",
+        f"- {industry or '해당 업종'}과 무관한 장면(자동차/공장/주방 등)이 등장하지 않아야 합니다.",
+        "- 같은 장면이 반복되지 않도록 씬 다양성을 확보해야 합니다.",
+        "",
+        "## 오디오 원칙",
+        "- 한국어 TTS만 사용합니다. 외국어 음성이 섞이지 않아야 합니다.",
         "- client_info에 없는 수치·인증·가격·위치는 단정하지 않습니다.",
     ])
     return "\n".join(lines)
@@ -75,37 +211,48 @@ def run_mock(
 
     critical: list[str] = []
     warnings: list[str] = []
+
+    foreign_in_script = _detect_foreign_in_script(script or "")
+    forbidden_hits = _find_forbidden(script or "", forbidden)
+    brand_suspects = _detect_brand_mixing(script or "", client_name)
+    irrelevant_findings = _find_irrelevant_objects(industry, script or "")
+    scenes_info = _analyze_scenes_text(scenes or "")
+
     flags = {
-        "detectedForeignLanguage": False,
-        "detectedCompanyMixing": False,
-        "detectedUnsupportedClaim": False,
+        "detectedForeignLanguage": foreign_in_script,
+        "detectedCompanyMixing": bool(brand_suspects),
+        "detectedUnsupportedClaim": bool(forbidden_hits),
         "detectedWrongIndustry": False,
         "detectedVisualTextIssue": False,
         "detectedAudioScriptMismatch": False,
+        "detectedFloatingObjects": False,
+        "detectedSpatialDistortion": False,
+        "detectedIrrelevantObjects": bool(irrelevant_findings),
+        "detectedDuplicateScenes": len(scenes_info["duplicateGroups"]) > 0,
+        "detectedForeignLanguageTTS": foreign_in_script,
     }
 
-    if script:
-        stt_text = script.strip()
-    elif client_name:
-        stt_text = f"안녕하세요, {client_name}입니다. (mock STT — 실제 분석 전 단계)"
-    else:
-        stt_text = "(mock STT — 고객사명·대본이 비어 있어 가짜 텍스트를 사용했습니다)"
-
-    if _detect_foreign_in_script(script or ""):
-        flags["detectedForeignLanguage"] = True
-        critical.append("대본에서 한국어가 거의 감지되지 않습니다. 외국어 TTS 가능성이 있습니다.")
-
-    hits = _find_forbidden(script or "", forbidden)
-    if hits:
-        flags["detectedUnsupportedClaim"] = True
-        critical.append(f"금지 표현이 포함되어 있습니다: {', '.join(hits)}")
-
-    brand_suspects = _detect_brand_mixing(script or "", client_name)
+    if foreign_in_script:
+        critical.append("대본에서 한국어가 거의 감지되지 않습니다. 외국어 TTS 가능성이 높습니다.")
+    if forbidden_hits:
+        critical.append(f"금지 표현이 포함되어 있습니다: {', '.join(forbidden_hits)}")
     if brand_suspects:
-        flags["detectedCompanyMixing"] = True
+        critical.append(f"대본에서 다른 회사명 후보가 발견되었습니다: {', '.join(brand_suspects[:3])}")
+    for find in irrelevant_findings:
         critical.append(
-            f"대본에서 다른 회사명 후보가 발견되었습니다: {', '.join(brand_suspects[:3])}"
+            f"업종 '{find['expectedContext']}'과 어울리지 않는 객체 가능성: '{find['object']}'"
         )
+    if scenes_info["duplicateGroups"]:
+        groups = scenes_info["duplicateGroups"]
+        if (scenes_info["diversityScore"] or 100) < 40:
+            critical.append(
+                f"씬 다양성이 매우 낮습니다 (점수 {scenes_info['diversityScore']}/100, "
+                f"중복 그룹 {len(groups)}개)."
+            )
+        else:
+            warnings.append(
+                f"중복 씬 라인이 발견됨 (그룹 {len(groups)}개, 다양성 {scenes_info['diversityScore']}/100)."
+            )
 
     if client_name and script and client_name not in script:
         warnings.append(f"대본에 고객사명 '{client_name}'이 등장하지 않습니다.")
@@ -124,10 +271,12 @@ def run_mock(
     if not script and not scenes and not generation_prompt:
         warnings.append("선택 입력(대본·씬·프롬프트)이 모두 비어 있어 비교 정확도가 낮습니다.")
 
-    score = max(0, min(100, 100 - len(critical) * 25 - len(warnings) * 5))
+    warnings.append("(mock) 시각 이상(floating/distortion) 탐지는 실제 비전 모델 연결 후 활성화됩니다.")
+
+    score = max(0, min(100, 100 - len(critical) * 25 - len(warnings) * 4))
     if critical:
         status = "retry"
-    elif len(warnings) >= 3:
+    elif len(warnings) >= 4:
         status = "human_review"
     else:
         status = "pass"
@@ -138,11 +287,31 @@ def run_mock(
         if status == "human_review" else ""
     )
 
+    if script:
+        stt_text = script.strip()
+    elif client_name:
+        stt_text = f"안녕하세요, {client_name}입니다. (mock STT — 실제 분석 전 단계)"
+    else:
+        stt_text = "(mock STT — 고객사명·대본이 비어 있어 가짜 텍스트를 사용했습니다)"
+
+    frame_offsets = [0.0, 2.0, 5.0, 10.0, 15.0, -2.0]
     frame_summary = [
-        {"offsetSec": float(o), "note": "(mock — 실제 캡처 미수행)"}
-        for o in (0, 2, 5, 10, 15)
+        {"offsetSec": o, "note": "(mock — 실제 캡처 미수행)"} for o in frame_offsets
     ]
-    frame_summary.append({"offsetSec": -2.0, "note": "(mock end-2s — 실제 길이 모름)"})
+
+    visual_qa_summary = _build_visual_qa_summary([o for o in frame_offsets if o >= 0])
+    scene_qa_summary = _build_scene_qa_summary(scenes_info["lines"], industry)
+    audio_language_summary = _build_audio_summary(script or "", foreign_in_script)
+
+    duplicate_scene_ranges = [
+        {
+            "sceneLine": g["line"],
+            "indices": g["indices"],
+            "count": g["count"],
+            "note": "텍스트 라인 중복 (실제 프레임 유사도 비교는 mock 미수행)",
+        }
+        for g in scenes_info["duplicateGroups"]
+    ]
 
     return {
         "status": status,
@@ -151,11 +320,20 @@ def run_mock(
         "warnings": warnings,
         **flags,
         "sttText": stt_text,
-        "sttLanguage": "unknown" if flags["detectedForeignLanguage"] else "ko",
+        "sttLanguage": audio_language_summary["primary"],
         "frameSummary": frame_summary,
         "retryPrompt": retry_prompt,
         "humanReviewReason": human_review_reason,
         "checkedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+
+        "sceneDiversityScore": scenes_info["diversityScore"],
+        "duplicateSceneRanges": duplicate_scene_ranges,
+        "visualAnomalyFrames": [],
+        "irrelevantObjectFindings": irrelevant_findings,
+        "audioLanguageSummary": audio_language_summary,
+        "visualQaSummary": visual_qa_summary,
+        "sceneQaSummary": scene_qa_summary,
+
         "_meta": {
             "mode": "mock",
             "video": video_meta,
@@ -165,5 +343,11 @@ def run_mock(
                 "generationPrompt": bool(generation_prompt),
                 "references": bool(references),
             },
+            "limitations": [
+                "프레임 유사도 비교 미수행 (실제 분석에서 활성화)",
+                "공간/구조 왜곡 탐지 미수행",
+                "공중 부유 객체 탐지 미수행",
+                "실제 STT 미수행 — script를 그대로 사용",
+            ],
         },
     }

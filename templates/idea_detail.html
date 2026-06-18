@@ -506,6 +506,72 @@
         <div id="qa-frames" class="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs"></div>
       </div>
 
+      <!-- 시각 이상 -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">시각 이상 (Visual anomaly QA)</div>
+        <div class="space-y-3">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-1">visualAnomalyFrames</div>
+            <ul id="qa-visual-anomaly-frames" class="space-y-1.5 text-sm text-slate-200"></ul>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-1">visualQaSummary (프레임별 관찰)</div>
+            <div id="qa-visual-summary" class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 무관 객체 -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">무관 객체 (irrelevantObjectFindings)</div>
+        <ul id="qa-irrelevant" class="space-y-1.5 text-sm text-slate-200"></ul>
+      </div>
+
+      <!-- 씬 분석 -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">씬 분석 (Scene QA)</div>
+          <div class="text-[11px] text-slate-500">다양성 점수 <span id="qa-diversity-score" class="text-slate-200 font-semibold">-</span> / 100</div>
+        </div>
+        <div class="mb-3 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+          <div id="qa-diversity-bar" class="h-full bg-slate-400" style="width:0%"></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-1">duplicateSceneRanges</div>
+            <ul id="qa-duplicate-ranges" class="space-y-1.5 text-sm text-slate-200"></ul>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-1">sceneQaSummary</div>
+            <ul id="qa-scene-summary" class="space-y-1.5 text-xs text-slate-200"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 오디오 언어 -->
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">오디오 언어 (audioLanguageSummary)</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">primary</div>
+            <div id="qa-audio-primary" class="mt-1 text-sm font-medium text-slate-100">-</div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">confidence</div>
+            <div id="qa-audio-confidence" class="mt-1 text-sm font-medium text-slate-100">-</div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">detectedSecondary</div>
+            <div id="qa-audio-secondary" class="mt-1 text-sm font-medium text-slate-100">-</div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">foreignSegments</div>
+            <div id="qa-audio-segments-count" class="mt-1 text-sm font-medium text-slate-100">-</div>
+          </div>
+        </div>
+        <ul id="qa-audio-segments" class="mt-3 space-y-1.5 text-xs text-slate-200"></ul>
+      </div>
+
       <div id="qa-retry-section" class="hidden rounded-xl border border-rose-900/40 bg-rose-950/10 p-5">
         <div class="flex items-center justify-between mb-2">
           <div class="text-[10px] uppercase tracking-wider text-rose-300">재생성 프롬프트 (retryPrompt)</div>
@@ -1284,7 +1350,12 @@
   }
 
   const FLAG_LABELS = {
-    detectedForeignLanguage: '외국어 TTS',
+    detectedFloatingObjects: '공중 부유 물체',
+    detectedSpatialDistortion: '공간 왜곡',
+    detectedIrrelevantObjects: '무관 객체',
+    detectedDuplicateScenes: '씬 반복',
+    detectedForeignLanguageTTS: '외국어 TTS (오디오)',
+    detectedForeignLanguage: '외국어 (대본)',
     detectedCompanyMixing: '다른 회사 혼입',
     detectedUnsupportedClaim: '검증 안 된 단정 표현',
     detectedWrongIndustry: '업종 불일치',
@@ -1327,6 +1398,148 @@
     }).join('');
   }
 
+  function severityClass(sev){
+    if (sev === 'high') return 'text-red-300';
+    if (sev === 'medium') return 'text-amber-300';
+    if (sev === 'low') return 'text-slate-400';
+    return 'text-slate-400';
+  }
+
+  function renderVisualAnomalyFrames(items){
+    const el = document.getElementById('qa-visual-anomaly-frames');
+    if (!items || !items.length) {
+      el.innerHTML = '<li class="text-slate-500 text-xs">시각 이상 프레임 없음</li>';
+      return;
+    }
+    el.innerHTML = items.map(it => {
+      const o = (typeof it.offsetSec === 'number') ? it.offsetSec.toFixed(2) + 's' : '?s';
+      const cat = it.category || '?';
+      const sev = it.severity || '?';
+      return `<li class="flex gap-2"><span class="text-slate-500">@${escapeHtml(o)}</span>
+        <span class="${severityClass(sev)}">[${escapeHtml(sev)}]</span>
+        <span class="text-slate-300">${escapeHtml(cat)}</span>
+        <span class="text-slate-200">${escapeHtml(it.description || '')}</span></li>`;
+    }).join('');
+  }
+
+  function renderVisualSummary(items){
+    const el = document.getElementById('qa-visual-summary');
+    if (!items || !items.length) { el.innerHTML = '<div class="text-slate-500">프레임별 관찰 없음</div>'; return; }
+    el.innerHTML = items.map(s => {
+      const o = (typeof s.offsetSec === 'number') ? s.offsetSec.toFixed(2) + 's' : '?s';
+      const obs = (s.observations || []).map(escapeHtml).join('<br/>');
+      const sp = (s.spatialOk === true) ? '<span class="text-emerald-300">spatialOk</span>'
+                : (s.spatialOk === false) ? '<span class="text-red-300">spatial 이상</span>'
+                : '<span class="text-slate-500">spatial 미판정</span>';
+      const fl = (s.floatingObjects && s.floatingObjects.length)
+        ? `<div class="mt-1 text-red-300">floating: ${s.floatingObjects.map(escapeHtml).join(', ')}</div>` : '';
+      const sc = (typeof s.score === 'number') ? `<span class="text-slate-400">score ${s.score}</span>` : '';
+      return `<div class="rounded-md border border-slate-800 bg-slate-950/60 p-2">
+        <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-slate-500">
+          <span>@ ${escapeHtml(o)}</span><span>${sp} ${sc}</span>
+        </div>
+        <div class="mt-1 text-slate-300">${obs || '<span class="text-slate-500">(관찰 없음)</span>'}</div>
+        ${fl}
+      </div>`;
+    }).join('');
+  }
+
+  function renderIrrelevant(items){
+    const el = document.getElementById('qa-irrelevant');
+    if (!items || !items.length) {
+      el.innerHTML = '<li class="text-slate-500 text-xs">무관 객체 없음</li>';
+      return;
+    }
+    el.innerHTML = items.map(it => {
+      const o = (typeof it.offsetSec === 'number') ? '@' + it.offsetSec.toFixed(2) + 's' : '@?';
+      const sev = it.severity || '?';
+      return `<li class="flex gap-2 flex-wrap">
+        <span class="text-slate-500">${escapeHtml(o)}</span>
+        <span class="${severityClass(sev)}">[${escapeHtml(sev)}]</span>
+        <span class="text-red-300 font-medium">${escapeHtml(it.object || '?')}</span>
+        <span class="text-slate-400">in ${escapeHtml(it.expectedContext || '?')}</span>
+        ${it.source ? `<span class="text-slate-500 text-[11px]">(${escapeHtml(it.source)})</span>` : ''}
+      </li>`;
+    }).join('');
+  }
+
+  function renderSceneAnalysis(data){
+    const score = data.sceneDiversityScore;
+    document.getElementById('qa-diversity-score').textContent = (score == null) ? '-' : score;
+    const pct = Math.max(0, Math.min(100, score == null ? 0 : score));
+    const bar = document.getElementById('qa-diversity-bar');
+    bar.style.width = pct + '%';
+    bar.className = 'h-full ' + (score == null ? 'bg-slate-700'
+      : score < 40 ? 'bg-red-400'
+      : score < 70 ? 'bg-amber-400'
+      : 'bg-emerald-400');
+
+    const dupEl = document.getElementById('qa-duplicate-ranges');
+    const dups = data.duplicateSceneRanges || [];
+    if (!dups.length) {
+      dupEl.innerHTML = '<li class="text-slate-500 text-xs">중복 구간 없음</li>';
+    } else {
+      dupEl.innerHTML = dups.map(d => {
+        if (typeof d.startSec === 'number' && typeof d.endSec === 'number') {
+          const sim = (typeof d.similarity === 'number') ? ` · sim ${d.similarity.toFixed(2)}` : '';
+          return `<li class="flex gap-2"><span class="text-slate-500">${d.startSec.toFixed(2)}s–${d.endSec.toFixed(2)}s${sim}</span>
+            <span class="text-slate-200">${escapeHtml(d.reason || '')}</span></li>`;
+        }
+        const count = d.count || (d.indices ? d.indices.length : 0);
+        return `<li class="flex gap-2"><span class="text-slate-500">×${count}</span>
+          <span class="text-slate-200">${escapeHtml(d.sceneLine || d.reason || '')}</span>
+          ${d.note ? `<span class="text-slate-500 text-[11px]">${escapeHtml(d.note)}</span>` : ''}</li>`;
+      }).join('');
+    }
+
+    const sceneEl = document.getElementById('qa-scene-summary');
+    const scenes = data.sceneQaSummary || [];
+    if (!scenes.length) {
+      sceneEl.innerHTML = '<li class="text-slate-500">씬 요약 없음</li>';
+    } else {
+      sceneEl.innerHTML = scenes.map(s => {
+        const idx = (s.sceneIdx != null) ? `#${s.sceneIdx}` : '#?';
+        const m = (s.matchesIntent === true) ? '<span class="text-emerald-300">의도일치</span>'
+                : (s.matchesIntent === false) ? '<span class="text-red-300">의도불일치</span>'
+                : '<span class="text-slate-500">미판정</span>';
+        const obs = (s.observedThemes && s.observedThemes.length) ? s.observedThemes.map(escapeHtml).join(', ') : '-';
+        return `<li class="rounded-md border border-slate-800 bg-slate-950/60 p-2">
+          <div class="flex items-center justify-between text-[10px] uppercase tracking-wider text-slate-500">
+            <span>${escapeHtml(idx)}</span><span>${m}</span>
+          </div>
+          <div class="mt-1 text-slate-200">${escapeHtml(s.description || '')}</div>
+          <div class="mt-0.5 text-slate-400">관찰: ${obs}</div>
+          ${s.note ? `<div class="mt-0.5 text-slate-500 text-[10px]">${escapeHtml(s.note)}</div>` : ''}
+        </li>`;
+      }).join('');
+    }
+  }
+
+  function renderAudioLanguage(s){
+    s = s || {};
+    document.getElementById('qa-audio-primary').textContent = s.primary || '-';
+    const conf = (typeof s.confidence === 'number') ? s.confidence.toFixed(2) : '-';
+    document.getElementById('qa-audio-confidence').textContent = conf;
+    const sec = (s.detectedSecondary && s.detectedSecondary.length) ? s.detectedSecondary.join(', ') : '-';
+    document.getElementById('qa-audio-secondary').textContent = sec;
+    const segs = s.foreignSegments || [];
+    document.getElementById('qa-audio-segments-count').textContent = segs.length;
+    const segEl = document.getElementById('qa-audio-segments');
+    if (!segs.length) {
+      segEl.innerHTML = '';
+      return;
+    }
+    segEl.innerHTML = segs.map(seg => {
+      const start = (typeof seg.startSec === 'number') ? seg.startSec.toFixed(2) + 's' : '?';
+      const end = (typeof seg.endSec === 'number') ? seg.endSec.toFixed(2) + 's' : '?';
+      return `<li class="flex gap-2 flex-wrap">
+        <span class="text-slate-500">${escapeHtml(start)}–${escapeHtml(end)}</span>
+        <span class="text-red-300">[${escapeHtml(seg.language || '?')}]</span>
+        <span class="text-slate-200">${escapeHtml(seg.text || seg.note || '')}</span>
+      </li>`;
+    }).join('');
+  }
+
   function render(data){
     lastResult = data;
     const badge = document.getElementById('qa-status-badge');
@@ -1337,6 +1550,12 @@
     renderFlags(data);
     renderList('qa-critical', data.criticalIssues, '치명적 문제 없음');
     renderList('qa-warnings', data.warnings, '경고 없음');
+
+    renderVisualAnomalyFrames(data.visualAnomalyFrames);
+    renderVisualSummary(data.visualQaSummary);
+    renderIrrelevant(data.irrelevantObjectFindings);
+    renderSceneAnalysis(data);
+    renderAudioLanguage(data.audioLanguageSummary);
 
     document.getElementById('qa-stt').textContent = data.sttText || '(STT 결과 없음)';
     document.getElementById('qa-stt-lang').textContent = data.sttLanguage ? 'lang=' + data.sttLanguage : '';
