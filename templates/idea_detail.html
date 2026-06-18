@@ -374,7 +374,7 @@
     <div class="rounded-xl border border-slate-800 bg-slate-900 p-6">
       <div>
         <h3 class="text-sm font-semibold text-slate-100">영상 + 고객사 정보 입력</h3>
-        <p class="mt-1 text-xs text-slate-400">mp4를 업로드하고 고객사 정보를 채운 뒤 QA를 실행합니다. 현재 mock 모드 — 입력값 기반 휴리스틱으로 화면/데이터 흐름만 검증합니다.</p>
+        <p class="mt-1 text-xs text-slate-400">mp4를 업로드하면 ffmpeg로 오디오·프레임을 실제 추출하고, Whisper STT + GPT-4o 비전으로 시각/음성 이상을 검수합니다. 실행에 보통 10~30초 소요됩니다.</p>
       </div>
 
       <!-- 1. 영상 파일 업로드 -->
@@ -423,6 +423,29 @@
         </div>
       </div>
 
+      <!-- 2-2. 영상 컨텍스트 -->
+      <div class="mt-6">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">2-2. 영상 컨텍스트 (무관 객체 / 의도 검사용)</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">영상 유형</span>
+            <input id="qa-video-type" type="text" placeholder="홍보영상 / 인터뷰 / 진료실 소개 등" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">씬 의도</span>
+            <input id="qa-scene-intent" type="text" placeholder="병원 진료실 내부 소개" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+          </label>
+          <label class="md:col-span-2 flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">나와야 할 주요 대상 <span class="text-slate-600">(쉼표 구분)</span></span>
+            <input id="qa-expected-subjects" type="text" placeholder="수의사, 진료대, 반려견" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+          </label>
+          <label class="md:col-span-2 flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">나오면 안 되는 물체 <span class="text-slate-600">(쉼표 구분)</span></span>
+            <input id="qa-forbidden-objects" type="text" placeholder="자동차, 비행기, 공장, 주방" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+          </label>
+        </div>
+      </div>
+
       <!-- 3. 선택 입력 -->
       <details class="mt-6 rounded-md border border-slate-800 bg-slate-950/40 p-4">
         <summary class="cursor-pointer text-[10px] uppercase tracking-wider text-slate-400 select-none">3. 선택 입력 (대본 / 씬 / 프롬프트 / 참고자료)</summary>
@@ -458,7 +481,7 @@
     </div>
 
     <div id="qa-busy" class="hidden rounded-md border border-slate-800 bg-slate-900 p-6 text-center text-sm text-slate-300">
-      QA 분석 중...
+      QA 분석 중... (오디오 추출 · STT · 프레임 캡처 · 비전 분석 — 보통 10~30초)
     </div>
 
     <div id="qa-result" class="hidden space-y-4">
@@ -1389,10 +1412,14 @@
     if (!frames || !frames.length) { el.innerHTML = '<div class="text-slate-500">프레임 정보가 없습니다.</div>'; return; }
     el.innerHTML = frames.map(f => {
       const o = (typeof f.offsetSec === 'number') ? f.offsetSec.toFixed(2) + 's' : '?s';
+      const imgUrl = f.imageDataUrl || f.path || '';
+      const imgHtml = imgUrl.startsWith('data:')
+        ? `<img src="${imgUrl}" class="mt-1 rounded border border-slate-800 w-full object-cover" alt="frame @${escapeHtml(o)}" />`
+        : (f.path ? `<div class="mt-1 text-slate-400 text-[11px] font-mono">${escapeHtml(f.path)}</div>` : '');
       return `
-        <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+        <div class="rounded-md border border-slate-800 bg-slate-950/60 p-2">
           <div class="text-[10px] uppercase tracking-wider text-slate-500">@ ${escapeHtml(o)}</div>
-          <div class="mt-1 text-slate-300">${escapeHtml(f.note || f.path || '')}</div>
+          ${imgHtml}
         </div>
       `;
     }).join('');
@@ -1619,6 +1646,10 @@
     fd.append('forbiddenClaims', val('qa-forbidden'));
     fd.append('brandTone', val('qa-tone'));
     fd.append('notes', val('qa-notes'));
+    fd.append('videoType', val('qa-video-type'));
+    fd.append('sceneIntent', val('qa-scene-intent'));
+    fd.append('expectedSubjects', val('qa-expected-subjects'));
+    fd.append('forbiddenObjects', val('qa-forbidden-objects'));
     fd.append('script', val('qa-script'));
     fd.append('scenes', val('qa-scenes'));
     fd.append('generationPrompt', val('qa-generation-prompt'));

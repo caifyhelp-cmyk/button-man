@@ -1,6 +1,13 @@
-"""Thin wrappers around ffmpeg / ffprobe."""
+"""Thin wrappers around ffmpeg / ffprobe.
+
+- extract_audio: video → 16kHz mono mp3 for Whisper
+- capture_frames: representative frames at given offsets + last-2s, full quality
+- capture_dense_frames: small frames spaced through the video for hashing only
+- frame_to_data_url: inline JPG → data: URL for the web UI
+"""
 from __future__ import annotations
 
+import base64
 import json
 import subprocess
 from pathlib import Path
@@ -47,10 +54,14 @@ def extract_audio(video: Path, out_path: Path) -> Path:
 def capture_frames(
     video: Path,
     out_dir: Path,
-    offsets_sec: list[int | float],
+    offsets_sec: list[int | float] | None = None,
 ) -> list[tuple[Path, float]]:
+    """Representative frames for the vision model and the UI."""
     out_dir.mkdir(parents=True, exist_ok=True)
     duration = get_duration_sec(video)
+
+    if offsets_sec is None:
+        offsets_sec = [0, 2, 5, 10, 15]
 
     targets: list[float] = []
     for off in offsets_sec:
@@ -72,3 +83,45 @@ def capture_frames(
         ])
         results.append((out, t))
     return results
+
+
+def capture_dense_frames(
+    video: Path,
+    out_dir: Path,
+    *,
+    target_count: int = 30,
+    min_step_sec: float = 0.5,
+    max_count: int = 60,
+) -> list[tuple[Path, float]]:
+    """Small frames sampled across the timeline for perceptual hashing only.
+
+    Step = max(min_step_sec, duration / target_count). Frames are downscaled to
+    256px wide and stored at lower quality (cheap to hash, never shown to user).
+    Capped at max_count to keep long videos affordable.
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    duration = get_duration_sec(video)
+    step = max(min_step_sec, duration / max(1, target_count))
+
+    offsets: list[float] = []
+    t = 0.0
+    while t < duration and len(offsets) < max_count:
+        offsets.append(round(t, 2))
+        t += step
+
+    results: list[tuple[Path, float]] = []
+    for off in offsets:
+        out = out_dir / f"dense_{int(off*1000):07d}ms.jpg"
+        _run([
+            "ffmpeg", "-y", "-ss", f"{off}", "-i", str(video),
+            "-frames:v", "1", "-vf", "scale=256:-1", "-q:v", "5",
+            str(out),
+        ])
+        results.append((out, off))
+    return results
+
+
+def frame_to_data_url(path: Path) -> str:
+    """Read a JPG file and return a data: URL string for inline embedding."""
+    b = path.read_bytes()
+    return "data:image/jpeg;base64," + base64.b64encode(b).decode("ascii")

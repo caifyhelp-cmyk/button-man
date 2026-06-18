@@ -52,14 +52,21 @@ def api_run(idea_id):
 def api_qa_run():
     """Multipart endpoint for the video QA agent (qa-video idea).
 
-    Currently routes to qa.mock.run_mock so the UI and data flow can be tested
-    without ffmpeg/STT/LLM. Swap to qa.runner.run_qa when real analysis is ready.
+    Runs the real pipeline: ffmpeg → Whisper → dHash similarity → GPT-4o vision →
+    aggregator. Requires OPENAI_API_KEY and ffmpeg installed in the container.
     """
-    from qa import mock as qa_mock
+    from qa.ffmpeg_utils import FfmpegMissing
+    from qa.web_runner import run_qa_on_upload
 
     video = request.files.get('video')
     if not video or not video.filename:
         return jsonify({'error': 'video file required (field name: video)'}), 400
+
+    if not os.environ.get('OPENAI_API_KEY'):
+        return jsonify({
+            'error': "OPENAI_API_KEY가 설정되지 않았습니다. Fly 배포에서는 `fly secrets set OPENAI_API_KEY=sk-...` 후 재배포하세요.",
+            'type': 'ConfigError',
+        }), 503
 
     def _form(name, default=''):
         return (request.form.get(name) or default).strip()
@@ -79,23 +86,29 @@ def api_qa_run():
         'brandTone': _form('brandTone'),
         'notes': _form('notes'),
     }
-
-    raw_bytes = video.read()
-    video_meta = {
-        'filename': video.filename,
-        'size': len(raw_bytes),
-        'mimetype': video.mimetype or '',
+    qa_context = {
+        'videoType': _form('videoType'),
+        'sceneIntent': _form('sceneIntent'),
+        'expectedSubjects': _form_list('expectedSubjects'),
+        'forbiddenObjects': _form_list('forbiddenObjects'),
     }
 
-    result = qa_mock.run_mock(
-        client_info=client_info,
-        video_meta=video_meta,
-        script=_form('script') or None,
-        scenes=_form('scenes') or None,
-        generation_prompt=_form('generationPrompt') or None,
-        references=_form('references') or None,
-    )
-    return jsonify(result)
+    raw_bytes = video.read()
+
+    try:
+        result = run_qa_on_upload(
+            video_bytes=raw_bytes,
+            video_filename=video.filename,
+            client_info=client_info,
+            qa_context=qa_context,
+            script=_form('script') or None,
+            scenes_text=_form('scenes') or None,
+            generation_prompt=_form('generationPrompt') or None,
+            references=_form('references') or None,
+        )
+        return jsonify(result)
+    except FfmpegMissing as e:
+        return jsonify({'error': str(e), 'type': 'FfmpegMissing'}), 500
 
 
 @app.route('/history')

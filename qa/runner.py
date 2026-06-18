@@ -1,20 +1,20 @@
-"""Orchestrator: extract audio + frames, run STT, call analyzer, write qa_result.json."""
+"""CLI orchestrator — same pipeline as web_runner but reads from qa-inputs/{jobId}/."""
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
 
-from .analyzer import analyze
-from .ffmpeg_utils import capture_frames, extract_audio
-from .stt import transcribe
+from .aggregator import aggregate_qa_results
+from .analyzer import run_visual_qa
+from .ffmpeg_utils import capture_dense_frames, capture_frames, extract_audio
+from .language import detect_audio_language
+from .similarity import calculate_frame_similarity, detect_duplicate_scenes
+from .stt import transcribe_audio
 
 load_dotenv()
-
-SAMPLE_OFFSETS_SEC = [0, 2, 5, 10, 15]
 
 
 def _load_optional_json(path: Path) -> Any:
@@ -42,67 +42,63 @@ def run_qa(job_id: str, inputs_dir: str = "qa-inputs") -> dict:
         raise FileNotFoundError(f"Missing required file: {client_info_path}")
 
     client_info = json.loads(client_info_path.read_text(encoding="utf-8"))
+    qa_context = _load_optional_json(job_dir / "qa_context.json") or {}
     script = _load_optional_text(job_dir / "script.txt")
-    scenes = _load_optional_json(job_dir / "scenes.json")
-    gen_ctx = _load_optional_json(job_dir / "generation_context.json")
+    scenes_text = _load_optional_text(job_dir / "scenes.json")
+    generation_prompt = _load_optional_text(job_dir / "generation_prompt.txt")
 
     artifacts = job_dir / "artifacts"
     artifacts.mkdir(exist_ok=True)
 
     audio_path = extract_audio(video, artifacts / "audio.mp3")
-    frames = capture_frames(video, artifacts, SAMPLE_OFFSETS_SEC)
-    stt = transcribe(audio_path)
+    stt_result = transcribe_audio(audio_path)
+    audio_language = detect_audio_language(stt_result)
 
-    analysis = analyze(
+    rep_frames = capture_frames(video, artifacts)
+    dense_frames = capture_dense_frames(video, artifacts, target_count=30)
+    hashes = calculate_frame_similarity(dense_frames)
+    dup_ranges, diversity_score = detect_duplicate_scenes(hashes)
+
+    visual = run_visual_qa(
         client_info=client_info,
-        stt_text=stt["text"],
-        stt_language=stt["language"],
-        frame_paths=frames,
+        qa_context=qa_context,
+        stt_text=stt_result.get("text") or "",
+        stt_language=audio_language["primary"],
         script=script,
-        scenes=scenes,
-        generation_context=gen_ctx,
+        scenes_text=scenes_text,
+        generation_prompt=generation_prompt,
+        references=None,
+        pre_signals={
+            "sceneDiversityScore": diversity_score,
+            "duplicateSceneRanges": dup_ranges,
+            "audioLanguageSummary": audio_language,
+        },
+        frame_paths=rep_frames,
     )
 
-    result = {
-        "jobId": job_id,
-        "status": analysis.get("status", "human_review"),
-        "score": int(analysis.get("score", 0)),
-        "criticalIssues": analysis.get("criticalIssues", []),
-        "warnings": analysis.get("warnings", []),
-        "detectedForeignLanguage": bool(analysis.get("detectedForeignLanguage", False)),
-        "detectedCompanyMixing": bool(analysis.get("detectedCompanyMixing", False)),
-        "detectedUnsupportedClaim": bool(analysis.get("detectedUnsupportedClaim", False)),
-        "detectedWrongIndustry": bool(analysis.get("detectedWrongIndustry", False)),
-        "detectedVisualTextIssue": bool(analysis.get("detectedVisualTextIssue", False)),
-        "detectedAudioScriptMismatch": bool(analysis.get("detectedAudioScriptMismatch", False)),
-        "detectedFloatingObjects": bool(analysis.get("detectedFloatingObjects", False)),
-        "detectedSpatialDistortion": bool(analysis.get("detectedSpatialDistortion", False)),
-        "detectedIrrelevantObjects": bool(analysis.get("detectedIrrelevantObjects", False)),
-        "detectedDuplicateScenes": bool(analysis.get("detectedDuplicateScenes", False)),
-        "detectedForeignLanguageTTS": bool(
-            analysis.get("detectedForeignLanguageTTS",
-                         analysis.get("detectedForeignLanguage", False))
-        ),
-        "sttText": stt["text"],
-        "sttLanguage": stt["language"],
-        "frameSummary": [
-            {"path": str(p.relative_to(job_dir)).replace("\\", "/"),
-             "offsetSec": round(t, 2)}
-            for p, t in frames
-        ],
-        "sceneDiversityScore": analysis.get("sceneDiversityScore"),
-        "duplicateSceneRanges": analysis.get("duplicateSceneRanges", []),
-        "visualAnomalyFrames": analysis.get("visualAnomalyFrames", []),
-        "irrelevantObjectFindings": analysis.get("irrelevantObjectFindings", []),
-        "audioLanguageSummary": analysis.get("audioLanguageSummary", {
-            "primary": stt["language"], "confidence": None,
-            "detectedSecondary": [], "foreignSegments": [],
-        }),
-        "visualQaSummary": analysis.get("visualQaSummary", []),
-        "sceneQaSummary": analysis.get("sceneQaSummary", []),
-        "retryPrompt": analysis.get("retryPrompt", ""),
-        "humanReviewReason": analysis.get("humanReviewReason", ""),
-        "checkedAt": datetime.now(timezone.utc).isoformat(),
+    result = aggregate_qa_results(
+        client_info=client_info,
+        qa_context=qa_context,
+        video_meta={"filename": "video.mp4", "size": video.stat().st_size},
+        stt_result=stt_result,
+        audio_language=audio_language,
+        similarity_result={
+            "duplicateSceneRanges": dup_ranges,
+            "sceneDiversityScore": diversity_score,
+        },
+        visual_analysis=visual,
+    )
+    result["jobId"] = job_id
+    result["frameSummary"] = [
+        {"path": str(p.relative_to(job_dir)).replace("\\", "/"),
+         "offsetSec": round(t, 2)}
+        for p, t in rep_frames
+    ]
+    result["_meta"] = {
+        "mode": "real",
+        "denseFramesAnalyzed": len(dense_frames),
+        "representativeFramesAnalyzed": len(rep_frames),
+        "sttSegments": len(stt_result.get("segments") or []),
     }
 
     out = job_dir / "qa_result.json"
