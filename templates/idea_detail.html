@@ -370,6 +370,158 @@
         </div>
       </div>
     </div>
+{% elif idea.id == 'qa-video' %}
+    <div class="rounded-xl border border-slate-800 bg-slate-900 p-6">
+      <div>
+        <h3 class="text-sm font-semibold text-slate-100">영상 + 고객사 정보 입력</h3>
+        <p class="mt-1 text-xs text-slate-400">mp4를 업로드하고 고객사 정보를 채운 뒤 QA를 실행합니다. 현재 mock 모드 — 입력값 기반 휴리스틱으로 화면/데이터 흐름만 검증합니다.</p>
+      </div>
+
+      <!-- 1. 영상 파일 업로드 -->
+      <div class="mt-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">1. 영상 파일</div>
+        <label class="block rounded-md border border-dashed border-slate-700 bg-slate-950/40 px-4 py-5 text-center cursor-pointer hover:border-slate-500 transition">
+          <input id="qa-video-file" type="file" accept="video/mp4,video/*" class="hidden" />
+          <div id="qa-video-prompt" class="text-sm text-slate-300">📼 mp4 파일을 선택하세요</div>
+          <div id="qa-video-meta" class="hidden mt-2 text-xs text-slate-400 space-y-0.5"></div>
+        </label>
+        <video id="qa-video-preview" controls class="mt-3 hidden w-full max-h-72 rounded-md border border-slate-800 bg-black"></video>
+      </div>
+
+      <!-- 2. 고객사 정보 -->
+      <div class="mt-6">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">2. 고객사 정보</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">고객사명</span>
+            <input id="qa-client-name" type="text" placeholder="강남동물의료센터" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">업종</span>
+            <input id="qa-industry" type="text" placeholder="동물병원" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+          </label>
+          <label class="md:col-span-2 flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">주요 서비스 <span class="text-slate-600">(쉼표 구분)</span></span>
+            <input id="qa-services" type="text" placeholder="피부질환, 외이질환, 심장질환, 슬개골탈구, 애견미용" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+          </label>
+          <label class="md:col-span-2 flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">홍보 포인트 <span class="text-slate-600">(쉼표 구분)</span></span>
+            <input id="qa-promotion" type="text" placeholder="심장질환 전문, 피부질환 전문, 동천동 동물병원" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+          </label>
+          <label class="md:col-span-2 flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">금지 표현 <span class="text-slate-600">(쉼표 구분)</span></span>
+            <input id="qa-forbidden" type="text" placeholder="완치 보장, 100% 치료, 최고, 유일" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">브랜드 톤</span>
+            <input id="qa-tone" type="text" placeholder="전문적이고 신뢰감 있는 톤" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">추가 메모 <span class="text-slate-600">(선택)</span></span>
+            <input id="qa-notes" type="text" placeholder="기타 주의사항" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+          </label>
+        </div>
+      </div>
+
+      <!-- 3. 선택 입력 -->
+      <details class="mt-6 rounded-md border border-slate-800 bg-slate-950/40 p-4">
+        <summary class="cursor-pointer text-[10px] uppercase tracking-wider text-slate-400 select-none">3. 선택 입력 (대본 / 씬 / 프롬프트 / 참고자료)</summary>
+        <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">원본 대본</span>
+            <textarea id="qa-script" rows="4" placeholder="영상에 사용된 원본 대본" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500"></textarea>
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">씬 구성</span>
+            <textarea id="qa-scenes" rows="4" placeholder="씬별 설명, 컷 구성 등" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500"></textarea>
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">영상 생성 프롬프트</span>
+            <textarea id="qa-generation-prompt" rows="4" placeholder="외부 영상 생성 플랫폼에 넣은 프롬프트" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500"></textarea>
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-[11px] uppercase tracking-wider text-slate-500">참고자료 / 웹검색 결과</span>
+            <textarea id="qa-references" rows="4" placeholder="제작 근거 자료, 웹검색 인용" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500"></textarea>
+          </label>
+        </div>
+      </details>
+
+      <!-- 4. 실행 / 초기화 -->
+      <div class="mt-6 flex items-center justify-end gap-2">
+        <button id="qa-reset-btn" type="button" class="rounded-md border border-slate-700 text-slate-200 text-sm font-medium px-3 py-2 hover:bg-slate-800">결과 초기화</button>
+        <button id="qa-run-btn" type="button" data-idea-id="{{ idea.id }}" data-idea-title="{{ idea.title }}" class="rounded-md bg-slate-100 text-slate-900 text-sm font-medium px-4 py-2 hover:bg-white">🔍 QA 실행</button>
+      </div>
+    </div>
+
+    <div id="qa-empty" class="rounded-md border border-dashed border-slate-800 p-6 text-center text-xs text-slate-500">
+      영상과 고객사 정보를 입력한 뒤 QA 실행 버튼을 누르세요.
+    </div>
+
+    <div id="qa-busy" class="hidden rounded-md border border-slate-800 bg-slate-900 p-6 text-center text-sm text-slate-300">
+      QA 분석 중...
+    </div>
+
+    <div id="qa-result" class="hidden space-y-4">
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span id="qa-status-badge" class="shrink-0 inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium"></span>
+            <div>
+              <div class="text-[10px] uppercase tracking-wider text-slate-500">점수</div>
+              <div id="qa-score" class="text-2xl font-semibold text-slate-100"></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="qa-download-btn" type="button" class="rounded-md border border-slate-700 text-slate-200 text-xs px-3 py-1.5 hover:bg-slate-800">qa_result.json 다운로드</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">자동 감지 플래그</div>
+        <div id="qa-flags" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">치명적 문제 (criticalIssues)</div>
+          <ul id="qa-critical" class="space-y-1.5 text-sm text-slate-200"></ul>
+        </div>
+        <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">경고 (warnings)</div>
+          <ul id="qa-warnings" class="space-y-1.5 text-sm text-slate-200"></ul>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">STT 결과</div>
+          <span id="qa-stt-lang" class="text-[11px] text-slate-500"></span>
+        </div>
+        <pre id="qa-stt" class="rounded-md border border-slate-800 bg-slate-950 p-3 text-xs text-slate-100 whitespace-pre-wrap leading-relaxed font-mono"></pre>
+      </div>
+
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">샘플 프레임 (frameSummary)</div>
+        <div id="qa-frames" class="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs"></div>
+      </div>
+
+      <div id="qa-retry-section" class="hidden rounded-xl border border-rose-900/40 bg-rose-950/10 p-5">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-[10px] uppercase tracking-wider text-rose-300">재생성 프롬프트 (retryPrompt)</div>
+          <button id="qa-copy-retry-btn" type="button" class="text-[11px] text-slate-300 hover:text-slate-100">복사</button>
+        </div>
+        <pre id="qa-retry-prompt" class="rounded-md border border-slate-800 bg-slate-950 p-3 text-xs text-slate-100 whitespace-pre-wrap leading-relaxed font-mono"></pre>
+        <p class="mt-2 text-[11px] text-rose-300/80">외부 영상 생성 플랫폼에 그대로 붙여 넣을 수 있도록 작성되었습니다. 자동 재생성은 아직 연결되지 않습니다.</p>
+      </div>
+
+      <div id="qa-human-section" class="hidden rounded-xl border border-amber-900/40 bg-amber-950/10 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-amber-300 mb-2">사람 검수 사유 (humanReviewReason)</div>
+        <p id="qa-human-review" class="text-sm text-slate-100 leading-relaxed"></p>
+      </div>
+
+      <p class="text-[11px] text-slate-500">점검 시각: <span id="qa-checked-at" class="text-slate-400"></span></p>
+    </div>
 {% else %}
     <div class="rounded-xl border border-slate-800 bg-slate-900 p-6">
       <div class="flex items-center justify-between gap-4">
@@ -403,7 +555,7 @@
     </div>
 {% endif %}
 
-{% if idea.id not in ['daily-sales-report', 'stock-alert'] %}
+{% if idea.id not in ['daily-sales-report', 'stock-alert', 'qa-video'] %}
     <div id="run-result" class="hidden space-y-4">
       <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
         <div class="flex items-center justify-between mb-2">
@@ -461,7 +613,7 @@
     </div>
 {% endif %}
 
-{% if idea.id in ['daily-sales-report', 'stock-alert'] %}
+{% if idea.id in ['daily-sales-report', 'stock-alert', 'qa-video'] %}
     <div class="rounded-md border border-amber-900/40 bg-amber-950/20 p-3 text-[11px] text-amber-200/80 leading-relaxed">
       ⓘ 이 화면은 실제 API 연동 전 단계입니다. POS, 카카오톡, 발주처 연동은 하지 않으며, 모든 계산은 입력값 기준으로 브라우저에서 생성됩니다.
     </div>
@@ -1071,6 +1223,237 @@
       vendorMsg.textContent = '발주처 확인 버튼은 실제 발주를 실행하지 않습니다.';
       vendorMsg.className = 'text-[11px] text-slate-500 leading-relaxed';
     }, 3000);
+  });
+})();
+{% endif %}
+
+{% if idea.id == 'qa-video' %}
+(function(){
+  const fileInput = document.getElementById('qa-video-file');
+  if (!fileInput) return;
+
+  const promptEl = document.getElementById('qa-video-prompt');
+  const metaEl = document.getElementById('qa-video-meta');
+  const previewEl = document.getElementById('qa-video-preview');
+  const runBtn = document.getElementById('qa-run-btn');
+  const resetBtn = document.getElementById('qa-reset-btn');
+  const emptyEl = document.getElementById('qa-empty');
+  const busyEl = document.getElementById('qa-busy');
+  const resultEl = document.getElementById('qa-result');
+  const ideaId = runBtn.dataset.ideaId;
+  const ideaTitle = runBtn.dataset.ideaTitle;
+
+  let lastResult = null;
+  let lastPreviewUrl = null;
+
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function val(id){ return (document.getElementById(id).value || '').trim(); }
+  function humanSize(n){
+    if (n < 1024) return n + ' B';
+    if (n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+    return (n/(1024*1024)).toFixed(2) + ' MB';
+  }
+
+  fileInput.addEventListener('change', () => {
+    const f = fileInput.files && fileInput.files[0];
+    if (!f) return;
+    promptEl.textContent = '📼 ' + f.name + ' (' + humanSize(f.size) + ')';
+    metaEl.classList.remove('hidden');
+    metaEl.innerHTML = `
+      <div>파일명: <span class="text-slate-200">${escapeHtml(f.name)}</span></div>
+      <div>용량: <span class="text-slate-200">${humanSize(f.size)}</span></div>
+      <div>MIME: <span class="text-slate-200">${escapeHtml(f.type || '(unknown)')}</span></div>
+    `;
+    if (lastPreviewUrl) URL.revokeObjectURL(lastPreviewUrl);
+    lastPreviewUrl = URL.createObjectURL(f);
+    previewEl.src = lastPreviewUrl;
+    previewEl.classList.remove('hidden');
+  });
+
+  function statusStyle(status){
+    if (status === 'pass') return 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60';
+    if (status === 'retry') return 'bg-red-950/40 text-red-300 border-red-800/60';
+    if (status === 'human_review') return 'bg-amber-950/40 text-amber-300 border-amber-800/60';
+    if (status === 'fail') return 'bg-rose-950/40 text-rose-300 border-rose-800/60';
+    return 'bg-slate-800 text-slate-300 border-slate-700';
+  }
+  function statusLabel(status){
+    return ({pass:'PASS', retry:'RETRY', human_review:'HUMAN REVIEW', fail:'FAIL'})[status] || status;
+  }
+
+  const FLAG_LABELS = {
+    detectedForeignLanguage: '외국어 TTS',
+    detectedCompanyMixing: '다른 회사 혼입',
+    detectedUnsupportedClaim: '검증 안 된 단정 표현',
+    detectedWrongIndustry: '업종 불일치',
+    detectedVisualTextIssue: '화면 텍스트 문제',
+    detectedAudioScriptMismatch: 'STT-대본 불일치'
+  };
+
+  function renderFlags(data){
+    const wrap = document.getElementById('qa-flags');
+    wrap.innerHTML = Object.entries(FLAG_LABELS).map(([k, label]) => {
+      const on = !!data[k];
+      const cls = on
+        ? 'bg-red-950/40 text-red-300 border-red-800/60'
+        : 'bg-slate-950/40 text-slate-400 border-slate-800';
+      const dot = on ? '●' : '○';
+      return `<div class="rounded-md border px-3 py-2 text-xs font-medium ${cls}">${dot} ${escapeHtml(label)}</div>`;
+    }).join('');
+  }
+
+  function renderList(elId, items, emptyText){
+    const el = document.getElementById(elId);
+    if (!items || !items.length) {
+      el.innerHTML = `<li class="text-slate-500 text-xs">${escapeHtml(emptyText)}</li>`;
+      return;
+    }
+    el.innerHTML = items.map(t => `<li class="flex gap-2"><span class="text-slate-500">•</span><span>${escapeHtml(t)}</span></li>`).join('');
+  }
+
+  function renderFrames(frames){
+    const el = document.getElementById('qa-frames');
+    if (!frames || !frames.length) { el.innerHTML = '<div class="text-slate-500">프레임 정보가 없습니다.</div>'; return; }
+    el.innerHTML = frames.map(f => {
+      const o = (typeof f.offsetSec === 'number') ? f.offsetSec.toFixed(2) + 's' : '?s';
+      return `
+        <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">@ ${escapeHtml(o)}</div>
+          <div class="mt-1 text-slate-300">${escapeHtml(f.note || f.path || '')}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function render(data){
+    lastResult = data;
+    const badge = document.getElementById('qa-status-badge');
+    badge.textContent = statusLabel(data.status);
+    badge.className = 'shrink-0 inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ' + statusStyle(data.status);
+    document.getElementById('qa-score').textContent = (data.score != null ? data.score : '-');
+
+    renderFlags(data);
+    renderList('qa-critical', data.criticalIssues, '치명적 문제 없음');
+    renderList('qa-warnings', data.warnings, '경고 없음');
+
+    document.getElementById('qa-stt').textContent = data.sttText || '(STT 결과 없음)';
+    document.getElementById('qa-stt-lang').textContent = data.sttLanguage ? 'lang=' + data.sttLanguage : '';
+    renderFrames(data.frameSummary);
+
+    const retrySec = document.getElementById('qa-retry-section');
+    if (data.retryPrompt) {
+      retrySec.classList.remove('hidden');
+      document.getElementById('qa-retry-prompt').textContent = data.retryPrompt;
+    } else {
+      retrySec.classList.add('hidden');
+    }
+
+    const humanSec = document.getElementById('qa-human-section');
+    if (data.humanReviewReason) {
+      humanSec.classList.remove('hidden');
+      document.getElementById('qa-human-review').textContent = data.humanReviewReason;
+    } else {
+      humanSec.classList.add('hidden');
+    }
+
+    document.getElementById('qa-checked-at').textContent = data.checkedAt || '';
+
+    emptyEl.classList.add('hidden');
+    busyEl.classList.add('hidden');
+    resultEl.classList.remove('hidden');
+  }
+
+  function saveHistory(data){
+    try {
+      const key = 'buttonMan.history.v1';
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      list.unshift({
+        id: 'h_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        executed_at: new Date().toISOString(),
+        idea_id: ideaId,
+        idea_title: ideaTitle,
+        run_type: 'mock',
+        status: data.status === 'pass' || data.status === 'human_review' ? 'success' : 'fail',
+        summary: `QA ${data.status} · score ${data.score} · critical ${(data.criticalIssues||[]).length}`,
+        payload: data
+      });
+      localStorage.setItem(key, JSON.stringify(list.slice(0, 100)));
+    } catch (_) {}
+  }
+
+  runBtn.addEventListener('click', async () => {
+    const f = fileInput.files && fileInput.files[0];
+    if (!f) { alert('mp4 파일을 먼저 선택해주세요.'); return; }
+
+    emptyEl.classList.add('hidden');
+    resultEl.classList.add('hidden');
+    busyEl.classList.remove('hidden');
+
+    const fd = new FormData();
+    fd.append('video', f);
+    fd.append('clientName', val('qa-client-name'));
+    fd.append('industry', val('qa-industry'));
+    fd.append('services', val('qa-services'));
+    fd.append('promotionPoints', val('qa-promotion'));
+    fd.append('forbiddenClaims', val('qa-forbidden'));
+    fd.append('brandTone', val('qa-tone'));
+    fd.append('notes', val('qa-notes'));
+    fd.append('script', val('qa-script'));
+    fd.append('scenes', val('qa-scenes'));
+    fd.append('generationPrompt', val('qa-generation-prompt'));
+    fd.append('references', val('qa-references'));
+
+    try {
+      const res = await fetch('/api/qa/run', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) {
+        busyEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        emptyEl.textContent = 'QA 실행 실패: ' + (data.error || res.status);
+        return;
+      }
+      render(data);
+      saveHistory(data);
+    } catch (e) {
+      busyEl.classList.add('hidden');
+      emptyEl.classList.remove('hidden');
+      emptyEl.textContent = '네트워크 오류: ' + e.message;
+    }
+  });
+
+  resetBtn.addEventListener('click', () => {
+    lastResult = null;
+    resultEl.classList.add('hidden');
+    busyEl.classList.add('hidden');
+    emptyEl.classList.remove('hidden');
+    emptyEl.textContent = '영상과 고객사 정보를 입력한 뒤 QA 실행 버튼을 누르세요.';
+  });
+
+  document.getElementById('qa-copy-retry-btn').addEventListener('click', async () => {
+    const text = document.getElementById('qa-retry-prompt').textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      const btn = document.getElementById('qa-copy-retry-btn');
+      const orig = btn.textContent;
+      btn.textContent = '복사됨';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    } catch (_) {}
+  });
+
+  document.getElementById('qa-download-btn').addEventListener('click', () => {
+    if (!lastResult) return;
+    const blob = new Blob([JSON.stringify(lastResult, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = (lastResult.checkedAt || new Date().toISOString()).replace(/[:.]/g, '-');
+    a.href = url;
+    a.download = `qa_result_${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
 })();
 {% endif %}

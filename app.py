@@ -9,6 +9,7 @@ import actions
 
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['MAX_CONTENT_LENGTH'] = 200 * 1024 * 1024  # 200 MB upload cap for QA agent
 app.secret_key = os.environ.get('SECRET_KEY', 'button-man-dev-secret')
 CORS(app)
 
@@ -45,6 +46,56 @@ def api_run(idea_id):
     result = actions.run_idea(idea_id, payload)
     status = 404 if result.get('status') == 'not_found' else 200
     return jsonify(result), status
+
+
+@app.route('/api/qa/run', methods=['POST'])
+def api_qa_run():
+    """Multipart endpoint for the video QA agent (qa-video idea).
+
+    Currently routes to qa.mock.run_mock so the UI and data flow can be tested
+    without ffmpeg/STT/LLM. Swap to qa.runner.run_qa when real analysis is ready.
+    """
+    from qa import mock as qa_mock
+
+    video = request.files.get('video')
+    if not video or not video.filename:
+        return jsonify({'error': 'video file required (field name: video)'}), 400
+
+    def _form(name, default=''):
+        return (request.form.get(name) or default).strip()
+
+    def _form_list(name):
+        raw = _form(name)
+        if not raw:
+            return []
+        return [s.strip() for s in raw.split(',') if s.strip()]
+
+    client_info = {
+        'clientName': _form('clientName'),
+        'industry': _form('industry'),
+        'services': _form_list('services'),
+        'promotionPoints': _form_list('promotionPoints'),
+        'forbiddenClaims': _form_list('forbiddenClaims'),
+        'brandTone': _form('brandTone'),
+        'notes': _form('notes'),
+    }
+
+    raw_bytes = video.read()
+    video_meta = {
+        'filename': video.filename,
+        'size': len(raw_bytes),
+        'mimetype': video.mimetype or '',
+    }
+
+    result = qa_mock.run_mock(
+        client_info=client_info,
+        video_meta=video_meta,
+        script=_form('script') or None,
+        scenes=_form('scenes') or None,
+        generation_prompt=_form('generationPrompt') or None,
+        references=_form('references') or None,
+    )
+    return jsonify(result)
 
 
 @app.route('/history')

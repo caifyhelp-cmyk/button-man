@@ -164,6 +164,42 @@
         "Bannerbear · Figma API (카드 이미지 자동 렌더)"
       ],
       "owner_message_sample": "📲 SNS 게시 후보가 준비됐어요\n\n원문 후기:\n\"딸기라떼 진짜 인생이에요. 사장님도 친절!\"\n\n생성된 카드: [미리보기 이미지 첨부]\n예약 시간: 6/16(월) 18:30\n\n[✓ 예약 확정] [✎ 문구 수정] [건너뛰기]"
+    },
+    {
+      "id": "qa-video",
+      "title": "영상 QA Agent",
+      "description": "외부에서 생성한 영상 mp4를 업로드하면 고객사 정보와 비교해 다른 회사 혼입·외국어 TTS·금지 표현·업종 불일치를 자동 검수합니다.",
+      "target_user": "외부 플랫폼에서 영상을 받아 고객사에 납품하기 전 1차 QA가 필요한 운영자",
+      "difficulty": "medium",
+      "status": "ready",
+      "problem": "외부 영상 생성 플랫폼 결과물은 다른 회사명 혼입, 외국어 TTS, 검증되지 않은 수치/효능 표현, 업종과 안 맞는 장면이 종종 섞여 나오고, 사람이 매번 풀로 시청해서 확인해야 한다.",
+      "solution": "다운로드한 mp4를 페이지에 업로드 → ffmpeg로 오디오 추출 + 대표 프레임 캡처 → Whisper STT + 비전 LLM이 client_info와 대조 → pass / retry / human_review / fail 판정 + 재생성 프롬프트 생성.",
+      "validation": "QA 통과율, retry 판정 시 사람이 동일 결론에 도달하는 일치율 80% 이상, 1편당 검수 시간 1분 이내.",
+      "required_data": [
+        "검사할 mp4 파일 (로컬 다운로드본)",
+        "고객사 정보 (clientName, industry, services, promotionPoints, forbiddenClaims, brandTone)",
+        "(선택) 원본 대본, 씬 구성, 생성 프롬프트, 참고자료"
+      ],
+      "integration_candidates": [
+        "ffmpeg / ffprobe (오디오 추출 + 프레임 캡처)",
+        "OpenAI Whisper (STT, 외국어 TTS 감지 위해 언어 자동감지)",
+        "GPT-4o vision 또는 Claude vision (프레임 + STT + client_info 멀티모달 판정)",
+        "qa_result.json 누적 저장 + 추후 자동 재생성 큐"
+      ],
+      "pre_implementation_checks": [
+        "ffmpeg 의존성: 로컬 CLI는 시스템 ffmpeg, Fly.dev 배포 컨테이너는 Dockerfile에 추가 필요",
+        "OPENAI_API_KEY 환경변수 (Fly.dev secrets)",
+        "업로드 크기 제한: MAX_CONTENT_LENGTH 200MB 적용됨",
+        "현재 MVP는 mock 모드 — 실제 분석 전환은 qa/runner.py 호출로 스왑"
+      ],
+      "risks": [
+        "비전 LLM 판정의 오탐/누락 — 사람 검수 워크플로우 병행 필요",
+        "긴 영상 처리 시 비용·지연 — 프레임 샘플링 6장으로 제한 중",
+        "고객사 forbiddenClaims 누락 시 위험 표현이 통과될 수 있음"
+      ],
+      "priority_note": "외부 생성 → 사람 검수 병목을 줄이는 1차 게이트. 자동 재생성까지는 가지 않고, retryPrompt 출력까지만 MVP.",
+      "first_test_plan": "샘플 mp4 + client_info.json 3~5세트로 mock 모드 결과 검수 → 사람 판정과 비교 → 실제 ffmpeg + OpenAI 모드로 전환 후 동일 세트 재실행해 결과 비교."
     }
   ]
 }
+
