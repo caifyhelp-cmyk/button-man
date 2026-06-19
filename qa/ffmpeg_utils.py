@@ -105,7 +105,8 @@ def capture_dense_frames(
 
     offsets: list[float] = []
     t = 0.0
-    while t < duration and len(offsets) < max_count:
+    # 0.1s safety margin so round(t,2) never lands on duration (ffmpeg -ss at EOF returns empty).
+    while t < duration - 0.1 and len(offsets) < max_count:
         offsets.append(round(t, 2))
         t += step
 
