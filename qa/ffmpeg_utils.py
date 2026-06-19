@@ -79,7 +79,7 @@ def capture_frames(
         out = out_dir / f"frame_{int(t*1000):07d}ms.jpg"
         _run([
             "ffmpeg", "-y", "-ss", f"{t}", "-i", str(video),
-            "-frames:v", "1", "-q:v", "3", str(out),
+            "-frames:v", "1", "-pix_fmt", "yuvj420p", "-q:v", "3", str(out),
         ])
         results.append((out, t))
     return results
@@ -114,7 +114,7 @@ def capture_dense_frames(
         out = out_dir / f"dense_{int(off*1000):07d}ms.jpg"
         _run([
             "ffmpeg", "-y", "-ss", f"{off}", "-i", str(video),
-            "-frames:v", "1", "-vf", "scale=256:-1", "-q:v", "5",
+            "-frames:v", "1", "-vf", "scale=256:-1", "-pix_fmt", "yuvj420p", "-q:v", "5",
             str(out),
         ])
         results.append((out, off))
