@@ -14,10 +14,23 @@ _CJK_RE = re.compile(r"[一-鿿぀-ゟ゠-ヿ]")
 _LATIN_RUN_RE = re.compile(r"[A-Za-z]{4,}")
 _HANGUL_RE = re.compile(r"[가-힣]")
 
+# Whisper verbose_json returns language as English full name ("korean"), not ISO.
+_LANG_MAP = {
+    "korean": "ko", "english": "en", "japanese": "ja", "chinese": "zh",
+    "spanish": "es", "french": "fr", "german": "de", "russian": "ru",
+    "portuguese": "pt", "italian": "it", "thai": "th", "vietnamese": "vi",
+    "indonesian": "id", "arabic": "ar", "hindi": "hi",
+}
+
+
+def _normalize_lang(lang: str | None) -> str:
+    l = (lang or "").strip().lower()
+    return _LANG_MAP.get(l, l or "unknown")
+
 
 def detect_audio_language(stt_result: dict) -> dict[str, Any]:
     """Return audioLanguageSummary structure derived from the Whisper response."""
-    primary = (stt_result.get("language") or "unknown").lower()
+    primary = _normalize_lang(stt_result.get("language"))
     text = stt_result.get("text") or ""
     segments = stt_result.get("segments") or []
 
