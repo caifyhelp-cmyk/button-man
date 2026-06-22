@@ -88,6 +88,22 @@ def aggregate_qa_results(
     sim_score = similarity_result.get("sceneDiversityScore")
     foreign_segments = audio_language.get("foreignSegments") or []
     primary_lang = (audio_language.get("primary") or "unknown").lower()
+    # Foreign-language risk requires confirmed human speech AND that we
+    # actually used the language-detection output. For BGM/silence/SFX we
+    # never penalize foreign labels — Whisper mis-tags noise as Khmer/Thai/etc.
+    speech_present = bool(audio_language.get("speechPresent"))
+    language_detection_used = bool(audio_language.get("languageDetectionUsed"))
+    has_transcribed_text = bool((stt_result.get("text") or "").strip())
+    lang_confidence = audio_language.get("confidence") or 0.0
+    foreign_lang_eligible = (
+        speech_present
+        and language_detection_used
+        and has_transcribed_text
+        and lang_confidence >= 0.5
+    )
+    foreign_lang_tts = foreign_lang_eligible and (
+        (primary_lang not in ("ko", "unknown")) or bool(foreign_segments)
+    )
 
     visual_anomaly_frames = visual_analysis.get("visualAnomalyFrames") or []
     irrelevant_findings = visual_analysis.get("irrelevantObjectFindings") or []
@@ -109,8 +125,8 @@ def aggregate_qa_results(
         "detectedDuplicateScenes": bool(
             (sim_score is not None and sim_score < 70) and len(sim_ranges) > 0
         ),
-        "detectedForeignLanguageTTS": (primary_lang != "ko") or bool(foreign_segments),
-        "detectedForeignLanguage": (primary_lang != "ko"),
+        "detectedForeignLanguageTTS": foreign_lang_tts,
+        "detectedForeignLanguage": foreign_lang_tts,
         "detectedCompanyMixing": bool(visual_analysis.get("detectedCompanyMixing")),
         "detectedUnsupportedClaim": bool(visual_analysis.get("detectedUnsupportedClaim")),
         "detectedWrongIndustry": bool(visual_analysis.get("detectedWrongIndustry")),
@@ -128,10 +144,11 @@ def aggregate_qa_results(
             warnings.append(
                 f"중복 씬 구간 발견 (다양성 {sim_score}/100, 그룹 {len(sim_ranges)}개)."
             )
-    if primary_lang and primary_lang not in ("ko", "unknown"):
-        critical.append(f"오디오 주 언어가 한국어가 아닙니다 (감지: {primary_lang}).")
-    elif foreign_segments:
-        critical.append(f"한국어 음성 중 외국어 구간이 {len(foreign_segments)}건 감지되었습니다.")
+    if foreign_lang_eligible:
+        if primary_lang and primary_lang not in ("ko", "unknown"):
+            critical.append(f"오디오 주 언어가 한국어가 아닙니다 (감지: {primary_lang}).")
+        elif foreign_segments:
+            critical.append(f"한국어 음성 중 외국어 구간이 {len(foreign_segments)}건 감지되었습니다.")
 
     # Status decision (priority order from product spec)
     if flags["detectedForeignLanguageTTS"]:

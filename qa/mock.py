@@ -100,26 +100,90 @@ def _find_irrelevant_objects(industry: str, script: str) -> list[dict[str, Any]]
     return findings
 
 
-def _build_audio_summary(script: str, foreign_detected: bool) -> dict[str, Any]:
-    if foreign_detected:
+_AUDIO_TYPE_LABELS = {
+    "speech": "음성",
+    "vocal_music": "가창/보컬 음악",
+    "music": "BGM",
+    "sfx": "효과음",
+    "silence": "무음",
+    "unclear": "불명확",
+}
+
+
+def _classify_mock_audio(script: str | None) -> dict[str, Any]:
+    """Mock 모드에서는 실제 오디오 분석이 없으므로 script 길이로 음성 여부를 가정.
+
+    실제 모드에서는 qa.language.classify_audio_type 이 Whisper 신호로 판정한다.
+    """
+    s = (script or "").strip()
+    if not s:
         return {
-            "primary": "unknown",
-            "confidence": 0.4,
-            "detectedSecondary": ["ko"],
-            "foreignSegments": [{
-                "startSec": 0.0,
-                "endSec": None,
-                "language": "unknown",
-                "note": "(mock — 대본에 한국어가 거의 없습니다. 실제 STT 필요)",
-            }],
-            "sttMode": "mock",
+            "audioType": "music",
+            "speechPresent": False,
+            "reason": "(mock) 대본/스크립트가 비어 있어 BGM-only 영상으로 가정합니다.",
+        }
+    if len(re.sub(r"[\s\W_]+", "", s)) < 6:
+        return {
+            "audioType": "unclear",
+            "speechPresent": False,
+            "reason": "(mock) 대본이 너무 짧아 사람 음성 여부가 불명확합니다.",
         }
     return {
-        "primary": "ko",
+        "audioType": "speech",
+        "speechPresent": True,
+        "reason": "(mock) 대본 길이 기준으로 음성으로 가정합니다.",
+    }
+
+
+def _build_audio_summary(script: str, foreign_detected: bool) -> dict[str, Any]:
+    cls = _classify_mock_audio(script)
+    audio_type = cls["audioType"]
+    speech_present = bool(cls["speechPresent"])
+
+    if not speech_present:
+        return {
+            "primary": "unknown",
+            "confidence": 0.0,
+            "detectedSecondary": [],
+            "foreignSegments": [],
+            "sttMode": "mock",
+            "audioType": audio_type,
+            "speechPresent": False,
+            "languageDetectionUsed": False,
+            "audioClassificationReason": cls["reason"],
+            "report": {
+                "오디오 유형": _AUDIO_TYPE_LABELS.get(audio_type, audio_type),
+                "음성 감지": "없음",
+                "언어 감지 결과": "무시됨",
+                "판단": "외국어 음성 리스크 없음",
+            },
+        }
+
+    primary = "unknown" if foreign_detected else "ko"
+    foreign_segs = []
+    if foreign_detected:
+        foreign_segs = [{
+            "startSec": 0.0,
+            "endSec": None,
+            "language": "unknown",
+            "note": "(mock — 대본에 한국어가 거의 없습니다. 실제 STT 필요)",
+        }]
+    return {
+        "primary": primary,
         "confidence": 0.95 if script else 0.5,
-        "detectedSecondary": [],
-        "foreignSegments": [],
+        "detectedSecondary": ["ko"] if foreign_detected else [],
+        "foreignSegments": foreign_segs,
         "sttMode": "mock",
+        "audioType": "speech",
+        "speechPresent": True,
+        "languageDetectionUsed": True,
+        "audioClassificationReason": cls["reason"],
+        "report": {
+            "오디오 유형": "음성",
+            "음성 감지": "있음",
+            "언어 감지 결과": primary,
+            "판단": "외국어 음성 리스크 있음" if foreign_detected else "외국어 음성 리스크 없음",
+        },
     }
 
 
@@ -213,13 +277,17 @@ def run_mock(
     warnings: list[str] = []
 
     foreign_in_script = _detect_foreign_in_script(script or "")
+    mock_audio_class = _classify_mock_audio(script or "")
+    speech_present_mock = bool(mock_audio_class["speechPresent"])
+    # 비음성(=BGM/무음/효과음)이면 외국어 리스크로 처리하지 않는다.
+    foreign_lang_tts = foreign_in_script and speech_present_mock
     forbidden_hits = _find_forbidden(script or "", forbidden)
     brand_suspects = _detect_brand_mixing(script or "", client_name)
     irrelevant_findings = _find_irrelevant_objects(industry, script or "")
     scenes_info = _analyze_scenes_text(scenes or "")
 
     flags = {
-        "detectedForeignLanguage": foreign_in_script,
+        "detectedForeignLanguage": foreign_lang_tts,
         "detectedCompanyMixing": bool(brand_suspects),
         "detectedUnsupportedClaim": bool(forbidden_hits),
         "detectedWrongIndustry": False,
@@ -229,10 +297,10 @@ def run_mock(
         "detectedSpatialDistortion": False,
         "detectedIrrelevantObjects": bool(irrelevant_findings),
         "detectedDuplicateScenes": len(scenes_info["duplicateGroups"]) > 0,
-        "detectedForeignLanguageTTS": foreign_in_script,
+        "detectedForeignLanguageTTS": foreign_lang_tts,
     }
 
-    if foreign_in_script:
+    if foreign_lang_tts:
         critical.append("대본에서 한국어가 거의 감지되지 않습니다. 외국어 TTS 가능성이 높습니다.")
     if forbidden_hits:
         critical.append(f"금지 표현이 포함되어 있습니다: {', '.join(forbidden_hits)}")

@@ -42,12 +42,16 @@ def transcribe_audio(audio_path: Path) -> dict:
                 "start": s.get("start"),
                 "end": s.get("end"),
                 "text": s.get("text"),
+                "no_speech_prob": s.get("no_speech_prob"),
+                "avg_logprob": s.get("avg_logprob"),
             })
         else:
             segments.append({
                 "start": getattr(s, "start", None),
                 "end": getattr(s, "end", None),
                 "text": getattr(s, "text", None),
+                "no_speech_prob": getattr(s, "no_speech_prob", None),
+                "avg_logprob": getattr(s, "avg_logprob", None),
             })
 
     return {
