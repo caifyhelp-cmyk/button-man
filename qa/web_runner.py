@@ -29,6 +29,7 @@ from .ffmpeg_utils import (
     frame_to_data_url,
 )
 from .language import detect_audio_language
+from .payload_lite import lighten_qa_response, log_payload_sizes
 from .similarity import calculate_frame_similarity, detect_duplicate_scenes
 from .stt import transcribe_audio
 
@@ -117,4 +118,6 @@ def run_qa_on_upload(
             "sttSegments": len(stt_result.get("segments") or []),
             "sttModel": stt_result.get("_model"),
         }
-        return result
+        light = lighten_qa_response(result)
+        log_payload_sizes(f"qa-video/{video_filename}", result, light)
+        return light
