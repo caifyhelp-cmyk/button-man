@@ -48,6 +48,21 @@ def api_run(idea_id):
     return jsonify(result), status
 
 
+@app.route('/api/ideas/<idea_id>/next', methods=['POST'])
+def api_update_next(idea_id):
+    """Update the '다음 작업' block fields for an idea.
+
+    Body: any subset of { pre_implementation_checks, risks, priority_note, first_test_plan }.
+    """
+    payload = request.get_json(silent=True) or {}
+    result = actions.update_next_block(idea_id, payload)
+    if not result.get('ok'):
+        st = result.get('status')
+        code = 404 if st == 'not_found' else (400 if st == 'bad_request' else 500)
+        return jsonify(result), code
+    return jsonify(result)
+
+
 @app.route('/api/qa/run', methods=['POST'])
 def api_qa_run():
     """Multipart endpoint for the video QA agent (qa-video idea).

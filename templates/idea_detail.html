@@ -712,45 +712,242 @@
   <!-- 탭: 다음 작업 -->
   <div id="tab-next" class="tab-panel mt-5 space-y-4 hidden">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">실제 구현 전 확인할 것</div>
-        {% if idea.pre_implementation_checks %}
-        <ul class="space-y-2 text-sm text-slate-200">
-          {% for item in idea.pre_implementation_checks %}
-          <li class="flex gap-2"><span class="text-slate-500">•</span><span>{{ item }}</span></li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <p class="text-sm text-slate-500">아직 정리되지 않았습니다.</p>
-        {% endif %}
+
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5 next-block"
+           data-field="pre_implementation_checks" data-type="list"
+           data-bullet="•" data-bullet-class="text-slate-500">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">실제 구현 전 확인할 것</div>
+          <div class="flex items-center gap-2">
+            <span class="next-status text-[11px] text-slate-400"></span>
+            <button type="button" class="next-edit-btn text-[11px] px-2 py-0.5 rounded border border-slate-700 hover:bg-slate-800 text-slate-300">편집</button>
+          </div>
+        </div>
+        <div class="next-view">
+          {% if idea.pre_implementation_checks %}
+          <ul class="space-y-2 text-sm text-slate-200">
+            {% for item in idea.pre_implementation_checks %}
+            <li class="flex gap-2"><span class="text-slate-500">•</span><span>{{ item }}</span></li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="text-sm text-slate-500">아직 정리되지 않았습니다.</p>
+          {% endif %}
+        </div>
+        <div class="next-edit hidden">
+          <textarea class="next-textarea w-full min-h-[140px] bg-slate-950 border border-slate-700 rounded p-2 text-sm text-slate-200 leading-relaxed">{% if idea.pre_implementation_checks %}{{ idea.pre_implementation_checks | join('\n') }}{% endif %}</textarea>
+          <p class="text-[10px] text-slate-500 mt-1">한 줄에 한 항목씩 입력합니다. 빈 줄은 무시됩니다.</p>
+          <div class="flex gap-2 mt-2">
+            <button type="button" class="next-save-btn text-[11px] px-3 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white disabled:opacity-50">저장</button>
+            <button type="button" class="next-cancel-btn text-[11px] px-3 py-1 rounded border border-slate-700 hover:bg-slate-800 text-slate-300">취소</button>
+          </div>
+        </div>
       </div>
-      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">리스크</div>
-        {% if idea.risks %}
-        <ul class="space-y-2 text-sm text-slate-200">
-          {% for item in idea.risks %}
-          <li class="flex gap-2"><span class="text-rose-400">!</span><span>{{ item }}</span></li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <p class="text-sm text-slate-500">아직 정리되지 않았습니다.</p>
-        {% endif %}
+
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5 next-block"
+           data-field="risks" data-type="list"
+           data-bullet="!" data-bullet-class="text-rose-400">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">리스크</div>
+          <div class="flex items-center gap-2">
+            <span class="next-status text-[11px] text-slate-400"></span>
+            <button type="button" class="next-edit-btn text-[11px] px-2 py-0.5 rounded border border-slate-700 hover:bg-slate-800 text-slate-300">편집</button>
+          </div>
+        </div>
+        <div class="next-view">
+          {% if idea.risks %}
+          <ul class="space-y-2 text-sm text-slate-200">
+            {% for item in idea.risks %}
+            <li class="flex gap-2"><span class="text-rose-400">!</span><span>{{ item }}</span></li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="text-sm text-slate-500">아직 정리되지 않았습니다.</p>
+          {% endif %}
+        </div>
+        <div class="next-edit hidden">
+          <textarea class="next-textarea w-full min-h-[140px] bg-slate-950 border border-slate-700 rounded p-2 text-sm text-slate-200 leading-relaxed">{% if idea.risks %}{{ idea.risks | join('\n') }}{% endif %}</textarea>
+          <p class="text-[10px] text-slate-500 mt-1">한 줄에 한 항목씩 입력합니다. 빈 줄은 무시됩니다.</p>
+          <div class="flex gap-2 mt-2">
+            <button type="button" class="next-save-btn text-[11px] px-3 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white disabled:opacity-50">저장</button>
+            <button type="button" class="next-cancel-btn text-[11px] px-3 py-1 rounded border border-slate-700 hover:bg-slate-800 text-slate-300">취소</button>
+          </div>
+        </div>
       </div>
-      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">우선순위 메모</div>
-        <p class="text-sm text-slate-200 leading-relaxed">
-          {% if idea.priority_note %}{{ idea.priority_note }}{% else %}<span class="text-slate-500">아직 정리되지 않았습니다.</span>{% endif %}
-        </p>
+
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5 next-block"
+           data-field="priority_note" data-type="text">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">우선순위 메모</div>
+          <div class="flex items-center gap-2">
+            <span class="next-status text-[11px] text-slate-400"></span>
+            <button type="button" class="next-edit-btn text-[11px] px-2 py-0.5 rounded border border-slate-700 hover:bg-slate-800 text-slate-300">편집</button>
+          </div>
+        </div>
+        <div class="next-view">
+          <p class="text-sm text-slate-200 leading-relaxed">
+            {% if idea.priority_note %}{{ idea.priority_note }}{% else %}<span class="text-slate-500">아직 정리되지 않았습니다.</span>{% endif %}
+          </p>
+        </div>
+        <div class="next-edit hidden">
+          <textarea class="next-textarea w-full min-h-[140px] bg-slate-950 border border-slate-700 rounded p-2 text-sm text-slate-200 leading-relaxed">{% if idea.priority_note %}{{ idea.priority_note }}{% endif %}</textarea>
+          <div class="flex gap-2 mt-2">
+            <button type="button" class="next-save-btn text-[11px] px-3 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white disabled:opacity-50">저장</button>
+            <button type="button" class="next-cancel-btn text-[11px] px-3 py-1 rounded border border-slate-700 hover:bg-slate-800 text-slate-300">취소</button>
+          </div>
+        </div>
       </div>
-      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">1차 테스트 방식</div>
-        <p class="text-sm text-slate-200 leading-relaxed">
-          {% if idea.first_test_plan %}{{ idea.first_test_plan }}{% else %}<span class="text-slate-500">아직 정리되지 않았습니다.</span>{% endif %}
-        </p>
+
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5 next-block"
+           data-field="first_test_plan" data-type="text">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">1차 테스트 방식</div>
+          <div class="flex items-center gap-2">
+            <span class="next-status text-[11px] text-slate-400"></span>
+            <button type="button" class="next-edit-btn text-[11px] px-2 py-0.5 rounded border border-slate-700 hover:bg-slate-800 text-slate-300">편집</button>
+          </div>
+        </div>
+        <div class="next-view">
+          <p class="text-sm text-slate-200 leading-relaxed">
+            {% if idea.first_test_plan %}{{ idea.first_test_plan }}{% else %}<span class="text-slate-500">아직 정리되지 않았습니다.</span>{% endif %}
+          </p>
+        </div>
+        <div class="next-edit hidden">
+          <textarea class="next-textarea w-full min-h-[140px] bg-slate-950 border border-slate-700 rounded p-2 text-sm text-slate-200 leading-relaxed">{% if idea.first_test_plan %}{{ idea.first_test_plan }}{% endif %}</textarea>
+          <div class="flex gap-2 mt-2">
+            <button type="button" class="next-save-btn text-[11px] px-3 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white disabled:opacity-50">저장</button>
+            <button type="button" class="next-cancel-btn text-[11px] px-3 py-1 rounded border border-slate-700 hover:bg-slate-800 text-slate-300">취소</button>
+          </div>
+        </div>
       </div>
+
     </div>
   </div>
 </section>
+
+<script>
+(function(){
+  // 다음 작업: 4개 블록 인라인 편집 → POST /api/ideas/<id>/next
+  const ideaId = {{ idea.id | tojson }};
+  const blocks = document.querySelectorAll('#tab-next .next-block');
+  if (!blocks.length) return;
+
+  function setStatus(block, msg, color){
+    const el = block.querySelector('.next-status');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.className = 'next-status text-[11px] ' + (color || 'text-slate-400');
+  }
+
+  function renderListView(viewEl, items, bullet, bulletClass){
+    viewEl.innerHTML = '';
+    if (!items.length){
+      const p = document.createElement('p');
+      p.className = 'text-sm text-slate-500';
+      p.textContent = '아직 정리되지 않았습니다.';
+      viewEl.appendChild(p);
+      return;
+    }
+    const ul = document.createElement('ul');
+    ul.className = 'space-y-2 text-sm text-slate-200';
+    for (const item of items){
+      const li = document.createElement('li');
+      li.className = 'flex gap-2';
+      const dot = document.createElement('span');
+      dot.className = bulletClass;
+      dot.textContent = bullet;
+      const span = document.createElement('span');
+      span.textContent = item;
+      li.append(dot, span);
+      ul.appendChild(li);
+    }
+    viewEl.appendChild(ul);
+  }
+
+  function renderTextView(viewEl, value){
+    viewEl.innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'text-sm text-slate-200 leading-relaxed';
+    if (value){
+      p.textContent = value;
+    } else {
+      const span = document.createElement('span');
+      span.className = 'text-slate-500';
+      span.textContent = '아직 정리되지 않았습니다.';
+      p.appendChild(span);
+    }
+    viewEl.appendChild(p);
+  }
+
+  blocks.forEach(block => {
+    const field = block.dataset.field;
+    const type = block.dataset.type;
+    const bullet = block.dataset.bullet || '•';
+    const bulletClass = block.dataset.bulletClass || 'text-slate-500';
+    const editBtn = block.querySelector('.next-edit-btn');
+    const cancelBtn = block.querySelector('.next-cancel-btn');
+    const saveBtn = block.querySelector('.next-save-btn');
+    const viewEl = block.querySelector('.next-view');
+    const editEl = block.querySelector('.next-edit');
+    const ta = block.querySelector('.next-textarea');
+    let snapshot = ta.value;
+
+    editBtn.addEventListener('click', () => {
+      snapshot = ta.value;
+      viewEl.classList.add('hidden');
+      editEl.classList.remove('hidden');
+      editBtn.classList.add('hidden');
+      ta.focus();
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      ta.value = snapshot;
+      editEl.classList.add('hidden');
+      viewEl.classList.remove('hidden');
+      editBtn.classList.remove('hidden');
+      setStatus(block, '', '');
+    });
+
+    saveBtn.addEventListener('click', async () => {
+      saveBtn.disabled = true;
+      setStatus(block, '저장 중...', 'text-slate-400');
+      const value = type === 'list'
+        ? ta.value.split('\n').map(s => s.trim()).filter(Boolean)
+        : ta.value.trim();
+      try {
+        const r = await fetch('/api/ideas/' + encodeURIComponent(ideaId) + '/next', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({[field]: value}),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok || !data.ok) {
+          throw new Error((data && (data.error || data.status)) || ('HTTP ' + r.status));
+        }
+        if (type === 'list') renderListView(viewEl, value, bullet, bulletClass);
+        else renderTextView(viewEl, value);
+        ta.value = type === 'list' ? value.join('\n') : value;
+        snapshot = ta.value;
+        editEl.classList.add('hidden');
+        viewEl.classList.remove('hidden');
+        editBtn.classList.remove('hidden');
+        const pushed = data.github && data.github.pushed;
+        const reason = data.github && data.github.reason;
+        if (pushed) {
+          setStatus(block, '저장됨 · 배포 진행 중 (약 1분 후 반영)', 'text-emerald-400');
+        } else {
+          setStatus(block, '저장됨 (로컬만) · ' + (reason || '재배포 시 사라질 수 있음'), 'text-amber-400');
+        }
+        setTimeout(() => setStatus(block, '', ''), 6000);
+      } catch (e) {
+        setStatus(block, '저장 실패: ' + e.message, 'text-rose-400');
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+  });
+})();
+</script>
 
 <script>
 (function(){
