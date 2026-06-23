@@ -1553,7 +1553,7 @@
   fileInput.addEventListener('change', () => {
     const f = fileInput.files && fileInput.files[0];
     if (!f) return;
-    promptEl.textContent = '📼 ' + f.name + ' (' + humanSize(f.size) + ')';
+    promptEl.textContent = '✅ mp4 파일이 업로드되었습니다';
     metaEl.classList.remove('hidden');
     metaEl.innerHTML = `
       <div>파일명: <span class="text-slate-200">${escapeHtml(f.name)}</span></div>
