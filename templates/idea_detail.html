@@ -34,6 +34,9 @@
       <button type="button" data-tab="overview" class="tab-btn px-4 py-2 border-b-2 border-slate-100 text-slate-100 font-medium">개요</button>
       <button type="button" data-tab="plan" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">기획 정리</button>
       <button type="button" data-tab="mock" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">mock 실행</button>
+{% if idea.id == 'qa-video' %}
+      <button type="button" data-tab="test" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">실제 테스트</button>
+{% endif %}
       <button type="button" data-tab="next" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">다음 작업</button>
     </nav>
   </div>
@@ -370,7 +373,107 @@
         </div>
       </div>
     </div>
-{% elif idea.id == 'qa-video' %}
+{% else %}
+    <div class="rounded-xl border border-slate-800 bg-slate-900 p-6">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <h3 class="text-sm font-semibold text-slate-100">mock 실행</h3>
+          <p class="mt-1 text-xs text-slate-400">실제 API 연동 전 단계입니다. 버튼을 누르면 시나리오만 시연됩니다.</p>
+        </div>
+        <button
+          id="run-btn"
+          type="button"
+          data-idea-id="{{ idea.id }}"
+          data-idea-title="{{ idea.title }}"
+          class="rounded-md bg-slate-100 text-slate-900 text-sm font-medium px-4 py-2 hover:bg-white transition-colors"
+        >📲 mock 실행</button>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+      <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">입력 데이터 예시</div>
+      {% if idea.sample_input %}
+      <pre class="rounded-md border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 whitespace-pre-wrap font-mono leading-relaxed">{{ idea.sample_input }}</pre>
+      {% elif idea.required_data %}
+      <ul class="space-y-2 text-sm text-slate-200">
+        {% for item in idea.required_data %}
+        <li class="flex gap-2"><span class="text-slate-500">•</span><span>{{ item }}</span></li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <p class="text-sm text-slate-500">정리된 입력 예시가 없습니다.</p>
+      {% endif %}
+    </div>
+{% endif %}
+
+{% if idea.id not in ['daily-sales-report', 'stock-alert'] %}
+    <div id="run-result" class="hidden space-y-4">
+      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="flex items-center justify-between mb-2">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">자동 처리 결과</div>
+          <span id="result-status" class="text-xs font-medium"></span>
+        </div>
+        <ul id="result-steps" class="rounded-md border border-slate-800 bg-slate-950/60 p-3 space-y-1.5 text-sm text-slate-200"></ul>
+        <p id="result-summary" class="mt-2 text-xs text-slate-400 leading-relaxed"></p>
+      </div>
+
+      <div id="result-flow-section" class="hidden rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">감지 및 답글 초안 흐름</div>
+        <div class="rounded-md border border-slate-800 bg-slate-950/60 p-4 space-y-4">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">감지된 플랫폼</div>
+            <p id="flow-platform" class="mt-1 text-sm text-slate-100 font-medium"></p>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">감지된 리뷰 원문</div>
+            <div class="mt-1 flex items-start gap-2">
+              <span id="flow-rating" class="text-amber-300 shrink-0 text-sm tracking-wide"></span>
+              <p id="flow-review" class="text-sm text-slate-100 leading-relaxed"></p>
+            </div>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">답글 초안</div>
+            <p id="flow-draft" class="mt-1 text-sm text-slate-100 leading-relaxed"></p>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">입력창 삽입 예정 문구</div>
+            <pre id="flow-insertion" class="mt-1 rounded-md border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 whitespace-pre-wrap font-mono leading-relaxed"></pre>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">사장님 선택 (시연 표시)</div>
+            <div id="flow-actions" class="flex flex-wrap gap-2"></div>
+            <p class="mt-2 text-[11px] text-slate-500">버튼 클릭은 시연 표시일 뿐 실제 동작은 없습니다.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="result-message-section" class="hidden rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">사장님에게 보여줄 결과 메시지</div>
+        <div id="result-message" class="rounded-md border border-slate-800 bg-slate-950 p-4 text-sm text-slate-100 whitespace-pre-wrap leading-relaxed font-mono"></div>
+      </div>
+
+      <p class="text-[11px] text-slate-500">완료 시각: <span id="result-time" class="text-slate-400"></span></p>
+    </div>
+
+    <div id="run-placeholder" class="rounded-md border border-dashed border-slate-800 p-6 text-center text-xs text-slate-500">
+      아직 실행하지 않았습니다. 버튼을 누르면 mock 결과가 여기에 표시됩니다.
+    </div>
+
+    <div class="rounded-md border border-amber-900/40 bg-amber-950/20 p-3 text-[11px] text-amber-200/80 leading-relaxed">
+      ⓘ 이 화면은 실제 API 연동 전 단계입니다. 표시되는 모든 결과는 mock 시나리오입니다.
+    </div>
+{% endif %}
+
+{% if idea.id in ['daily-sales-report', 'stock-alert'] %}
+    <div class="rounded-md border border-amber-900/40 bg-amber-950/20 p-3 text-[11px] text-amber-200/80 leading-relaxed">
+      ⓘ 이 화면은 실제 API 연동 전 단계입니다. POS, 카카오톡, 발주처 연동은 하지 않으며, 모든 계산은 입력값 기준으로 브라우저에서 생성됩니다.
+    </div>
+{% endif %}
+  </div>
+
+{% if idea.id == 'qa-video' %}
+  <!-- 탭: 실제 테스트 (qa-video 전용) -->
+  <div id="tab-test" class="tab-panel mt-5 space-y-4 hidden">
     <div class="rounded-xl border border-slate-800 bg-slate-900 p-6">
       <div>
         <h3 class="text-sm font-semibold text-slate-100">영상 + 고객사 정보 입력</h3>
@@ -611,103 +714,8 @@
 
       <p class="text-[11px] text-slate-500">점검 시각: <span id="qa-checked-at" class="text-slate-400"></span></p>
     </div>
-{% else %}
-    <div class="rounded-xl border border-slate-800 bg-slate-900 p-6">
-      <div class="flex items-center justify-between gap-4">
-        <div>
-          <h3 class="text-sm font-semibold text-slate-100">mock 실행</h3>
-          <p class="mt-1 text-xs text-slate-400">실제 API 연동 전 단계입니다. 버튼을 누르면 시나리오만 시연됩니다.</p>
-        </div>
-        <button
-          id="run-btn"
-          type="button"
-          data-idea-id="{{ idea.id }}"
-          data-idea-title="{{ idea.title }}"
-          class="rounded-md bg-slate-100 text-slate-900 text-sm font-medium px-4 py-2 hover:bg-white transition-colors"
-        >📲 mock 실행</button>
-      </div>
-    </div>
-
-    <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-      <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">입력 데이터 예시</div>
-      {% if idea.sample_input %}
-      <pre class="rounded-md border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 whitespace-pre-wrap font-mono leading-relaxed">{{ idea.sample_input }}</pre>
-      {% elif idea.required_data %}
-      <ul class="space-y-2 text-sm text-slate-200">
-        {% for item in idea.required_data %}
-        <li class="flex gap-2"><span class="text-slate-500">•</span><span>{{ item }}</span></li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p class="text-sm text-slate-500">정리된 입력 예시가 없습니다.</p>
-      {% endif %}
-    </div>
-{% endif %}
-
-{% if idea.id not in ['daily-sales-report', 'stock-alert', 'qa-video'] %}
-    <div id="run-result" class="hidden space-y-4">
-      <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="flex items-center justify-between mb-2">
-          <div class="text-[10px] uppercase tracking-wider text-slate-500">자동 처리 결과</div>
-          <span id="result-status" class="text-xs font-medium"></span>
-        </div>
-        <ul id="result-steps" class="rounded-md border border-slate-800 bg-slate-950/60 p-3 space-y-1.5 text-sm text-slate-200"></ul>
-        <p id="result-summary" class="mt-2 text-xs text-slate-400 leading-relaxed"></p>
-      </div>
-
-      <div id="result-flow-section" class="hidden rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-3">감지 및 답글 초안 흐름</div>
-        <div class="rounded-md border border-slate-800 bg-slate-950/60 p-4 space-y-4">
-          <div>
-            <div class="text-[10px] uppercase tracking-wider text-slate-500">감지된 플랫폼</div>
-            <p id="flow-platform" class="mt-1 text-sm text-slate-100 font-medium"></p>
-          </div>
-          <div>
-            <div class="text-[10px] uppercase tracking-wider text-slate-500">감지된 리뷰 원문</div>
-            <div class="mt-1 flex items-start gap-2">
-              <span id="flow-rating" class="text-amber-300 shrink-0 text-sm tracking-wide"></span>
-              <p id="flow-review" class="text-sm text-slate-100 leading-relaxed"></p>
-            </div>
-          </div>
-          <div>
-            <div class="text-[10px] uppercase tracking-wider text-slate-500">답글 초안</div>
-            <p id="flow-draft" class="mt-1 text-sm text-slate-100 leading-relaxed"></p>
-          </div>
-          <div>
-            <div class="text-[10px] uppercase tracking-wider text-slate-500">입력창 삽입 예정 문구</div>
-            <pre id="flow-insertion" class="mt-1 rounded-md border border-slate-800 bg-slate-950 p-3 text-xs text-slate-200 whitespace-pre-wrap font-mono leading-relaxed"></pre>
-          </div>
-          <div>
-            <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">사장님 선택 (시연 표시)</div>
-            <div id="flow-actions" class="flex flex-wrap gap-2"></div>
-            <p class="mt-2 text-[11px] text-slate-500">버튼 클릭은 시연 표시일 뿐 실제 동작은 없습니다.</p>
-          </div>
-        </div>
-      </div>
-
-      <div id="result-message-section" class="hidden rounded-xl border border-slate-800 bg-slate-900 p-5">
-        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">사장님에게 보여줄 결과 메시지</div>
-        <div id="result-message" class="rounded-md border border-slate-800 bg-slate-950 p-4 text-sm text-slate-100 whitespace-pre-wrap leading-relaxed font-mono"></div>
-      </div>
-
-      <p class="text-[11px] text-slate-500">완료 시각: <span id="result-time" class="text-slate-400"></span></p>
-    </div>
-
-    <div id="run-placeholder" class="rounded-md border border-dashed border-slate-800 p-6 text-center text-xs text-slate-500">
-      아직 실행하지 않았습니다. 버튼을 누르면 mock 결과가 여기에 표시됩니다.
-    </div>
-
-    <div class="rounded-md border border-amber-900/40 bg-amber-950/20 p-3 text-[11px] text-amber-200/80 leading-relaxed">
-      ⓘ 이 화면은 실제 API 연동 전 단계입니다. 표시되는 모든 결과는 mock 시나리오입니다.
-    </div>
-{% endif %}
-
-{% if idea.id in ['daily-sales-report', 'stock-alert'] %}
-    <div class="rounded-md border border-amber-900/40 bg-amber-950/20 p-3 text-[11px] text-amber-200/80 leading-relaxed">
-      ⓘ 이 화면은 실제 API 연동 전 단계입니다. POS, 카카오톡, 발주처 연동은 하지 않으며, 모든 계산은 입력값 기준으로 브라우저에서 생성됩니다.
-    </div>
-{% endif %}
   </div>
+{% endif %}
 
   <!-- 탭: 다음 작업 -->
   <div id="tab-next" class="tab-panel mt-5 space-y-4 hidden">
@@ -968,7 +976,7 @@
   }
   tabs.forEach(t => t.addEventListener('click', () => showTab(t.dataset.tab)));
   const initial = (location.hash || '').replace('#','');
-  if (['overview','plan','mock','next'].includes(initial)) showTab(initial);
+  if (['overview','plan','mock','test','next'].includes(initial)) showTab(initial);
 
   // mock 실행 (daily-sales-report 외 아이디어용)
   const btn = document.getElementById('run-btn');
