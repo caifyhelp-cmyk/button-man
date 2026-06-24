@@ -34,7 +34,7 @@
       <button type="button" data-tab="overview" class="tab-btn px-4 py-2 border-b-2 border-slate-100 text-slate-100 font-medium">개요</button>
       <button type="button" data-tab="plan" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">기획 정리</button>
       <button type="button" data-tab="mock" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">mock 실행</button>
-{% if idea.id == 'qa-video' %}
+{% if idea.id in ['qa-video', 'stock-alert', 'sns-review-post'] %}
       <button type="button" data-tab="test" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">실제 테스트</button>
 {% endif %}
       <button type="button" data-tab="next" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200">다음 작업</button>
@@ -713,6 +713,114 @@
       </div>
 
       <p class="text-[11px] text-slate-500">점검 시각: <span id="qa-checked-at" class="text-slate-400"></span></p>
+    </div>
+  </div>
+{% endif %}
+
+{% if idea.id == 'stock-alert' %}
+  <!-- 탭: 실제 테스트 (stock-alert 임시 placeholder) -->
+  <div id="tab-test" class="tab-panel mt-5 space-y-4 hidden">
+    <div class="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
+      <div>
+        <h3 class="text-sm font-semibold text-slate-100">재고 임계 알림 — 시뮬레이션</h3>
+        <p class="mt-1 text-xs text-slate-400">아직 POS 연동 없이 입력값만으로 알림 메시지를 미리 만들어봅니다. 실제 알림은 발송되지 않습니다.</p>
+      </div>
+
+      <div class="rounded-md border border-amber-900/40 bg-amber-950/20 p-3 text-[11px] text-amber-200/80 leading-relaxed">
+        ⓘ 내부 UI는 아직 미확정 — 입력 항목과 결과 카드는 임시 예시입니다.
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">품목명</span>
+          <input id="stock-item" type="text" placeholder="우유 200ml팩" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">현재 재고 수량</span>
+          <input id="stock-current" type="number" min="0" placeholder="6" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">임계치 (개)</span>
+          <input id="stock-threshold" type="number" min="0" placeholder="10" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">시간당 평균 소진량</span>
+          <input id="stock-rate" type="number" min="0" step="0.1" placeholder="2" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="md:col-span-2 flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">발주처 (선택)</span>
+          <input id="stock-supplier" type="text" placeholder="○○유업 발주 카톡" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="stock-run-btn" class="rounded-md bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-sm font-medium text-white">테스트 알림 생성</button>
+        <button type="button" id="stock-reset-btn" class="rounded-md border border-slate-700 hover:bg-slate-800 px-4 py-2 text-sm text-slate-300">초기화</button>
+      </div>
+
+      <div id="stock-result" class="hidden rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+        <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">사장님에게 보낼 메시지 (미발송)</div>
+        <pre id="stock-result-msg" class="whitespace-pre-wrap text-sm text-slate-100 leading-relaxed font-sans"></pre>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% if idea.id == 'sns-review-post' %}
+  <!-- 탭: 실제 테스트 (sns-review-post 임시 placeholder) -->
+  <div id="tab-test" class="tab-panel mt-5 space-y-4 hidden">
+    <div class="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-5">
+      <div>
+        <h3 class="text-sm font-semibold text-slate-100">SNS 카드 게시 — 시뮬레이션</h3>
+        <p class="mt-1 text-xs text-slate-400">후기 텍스트를 넣으면 카드 문구 초안을 만들고 미리보기를 보여줍니다. 실제 인스타·페북 업로드는 없습니다.</p>
+      </div>
+
+      <div class="rounded-md border border-amber-900/40 bg-amber-950/20 p-3 text-[11px] text-amber-200/80 leading-relaxed">
+        ⓘ 내부 UI는 아직 미확정 — 카드 디자인과 게시 흐름은 임시 예시입니다.
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">매장명</span>
+          <input id="sns-store" type="text" placeholder="카이파이 카페" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+        <label class="flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">별점</span>
+          <select id="sns-rating" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500">
+            <option value="5">★★★★★ (5점)</option>
+            <option value="4">★★★★☆ (4점)</option>
+            <option value="3">★★★☆☆ (3점)</option>
+          </select>
+        </label>
+        <label class="md:col-span-2 flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">후기 원문</span>
+          <textarea id="sns-review-text" rows="4" placeholder="딸기라떼 진짜 인생이에요. 사장님도 친절!" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 leading-relaxed focus:outline-none focus:border-slate-500"></textarea>
+        </label>
+        <label class="md:col-span-2 flex flex-col gap-1">
+          <span class="text-[11px] uppercase tracking-wider text-slate-500">예약 시간 (선택)</span>
+          <input id="sns-schedule" type="datetime-local" class="rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 focus:outline-none focus:border-slate-500" />
+        </label>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        <button type="button" id="sns-run-btn" class="rounded-md bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-sm font-medium text-white">카드 미리보기 생성</button>
+        <button type="button" id="sns-reset-btn" class="rounded-md border border-slate-700 hover:bg-slate-800 px-4 py-2 text-sm text-slate-300">초기화</button>
+      </div>
+
+      <div id="sns-result" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="rounded-xl border border-slate-800 bg-gradient-to-br from-rose-900/40 to-slate-900 p-5 aspect-square flex flex-col justify-between">
+          <div class="text-[10px] uppercase tracking-wider text-rose-200/80">CUSTOMER REVIEW</div>
+          <div>
+            <p id="sns-card-text" class="text-base text-slate-100 leading-relaxed font-medium"></p>
+            <p id="sns-card-rating" class="mt-2 text-sm text-amber-300"></p>
+          </div>
+          <div id="sns-card-store" class="text-[11px] text-slate-400"></div>
+        </div>
+        <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-2">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">사장님 승인 화면 (미발송)</div>
+          <pre id="sns-owner-msg" class="whitespace-pre-wrap text-sm text-slate-100 leading-relaxed font-sans"></pre>
+        </div>
+      </div>
     </div>
   </div>
 {% endif %}
@@ -1909,6 +2017,114 @@
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+})();
+{% endif %}
+
+{% if idea.id == 'stock-alert' %}
+(function(){
+  const runBtn = document.getElementById('stock-run-btn');
+  if (!runBtn) return;
+  const resetBtn = document.getElementById('stock-reset-btn');
+  const resultEl = document.getElementById('stock-result');
+  const resultMsg = document.getElementById('stock-result-msg');
+
+  function val(id){ return (document.getElementById(id).value || '').trim(); }
+  function num(id){ const v = parseFloat(document.getElementById(id).value); return isFinite(v) ? v : 0; }
+
+  runBtn.addEventListener('click', () => {
+    const item = val('stock-item') || '품목명 미입력';
+    const current = num('stock-current');
+    const threshold = num('stock-threshold');
+    const rate = num('stock-rate');
+    const supplier = val('stock-supplier');
+
+    let urgency = '여유';
+    let hoursLeft = null;
+    if (rate > 0) {
+      hoursLeft = current / rate;
+      if (hoursLeft < 3) urgency = '긴급';
+      else if (hoursLeft < 12) urgency = '주의';
+    }
+    const overThreshold = threshold > 0 && current <= threshold;
+
+    const lines = [
+      `📲 재고 임박 — ${item}`,
+      ``,
+      `• 잔여 ${current}개  ${overThreshold ? '(임계치 ' + threshold + '개 이하)' : ''}`.trim(),
+    ];
+    if (hoursLeft !== null) {
+      lines.push(`• 예상 소진: 약 ${hoursLeft.toFixed(1)}시간 (${urgency})`);
+    }
+    if (supplier) {
+      lines.push(``, `[📞 ${supplier}] [잠시 무시]`);
+    } else {
+      lines.push(``, `[📞 발주처 전화] [잠시 무시]`);
+    }
+
+    resultMsg.textContent = lines.join('\n');
+    resultEl.classList.remove('hidden');
+  });
+
+  resetBtn.addEventListener('click', () => {
+    ['stock-item','stock-current','stock-threshold','stock-rate','stock-supplier'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    resultEl.classList.add('hidden');
+    resultMsg.textContent = '';
+  });
+})();
+{% endif %}
+
+{% if idea.id == 'sns-review-post' %}
+(function(){
+  const runBtn = document.getElementById('sns-run-btn');
+  if (!runBtn) return;
+  const resetBtn = document.getElementById('sns-reset-btn');
+  const resultEl = document.getElementById('sns-result');
+  const cardText = document.getElementById('sns-card-text');
+  const cardRating = document.getElementById('sns-card-rating');
+  const cardStore = document.getElementById('sns-card-store');
+  const ownerMsg = document.getElementById('sns-owner-msg');
+
+  function val(id){ return (document.getElementById(id).value || '').trim(); }
+  function stars(n){ return '★'.repeat(n) + '☆'.repeat(5 - n); }
+
+  runBtn.addEventListener('click', () => {
+    const store = val('sns-store') || '○○매장';
+    const rating = parseInt(document.getElementById('sns-rating').value, 10) || 5;
+    const review = val('sns-review-text') || '(후기 텍스트가 비어 있습니다)';
+    const schedule = val('sns-schedule');
+
+    cardText.textContent = '"' + review + '"';
+    cardRating.textContent = stars(rating) + ' (' + rating + '점)';
+    cardStore.textContent = '— ' + store;
+
+    const lines = [
+      `📲 SNS 게시 후보가 준비됐어요`,
+      ``,
+      `원문 후기:`,
+      `"${review}"`,
+      ``,
+      `예약 시간: ${schedule ? schedule.replace('T', ' ') : '(지금 게시)'}`,
+      `대상 채널: 인스타그램, 페이스북`,
+      ``,
+      `[✓ 예약 확정] [✎ 문구 수정] [건너뛰기]`
+    ];
+    ownerMsg.textContent = lines.join('\n');
+    resultEl.classList.remove('hidden');
+  });
+
+  resetBtn.addEventListener('click', () => {
+    ['sns-store','sns-review-text','sns-schedule'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('sns-rating').selectedIndex = 0;
+    resultEl.classList.add('hidden');
+    cardText.textContent = '';
+    cardRating.textContent = '';
+    cardStore.textContent = '';
+    ownerMsg.textContent = '';
   });
 })();
 {% endif %}
