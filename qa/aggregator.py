@@ -12,6 +12,113 @@ from datetime import datetime, timezone
 from typing import Any
 
 
+# Display labels for detailedFindings entry types (Korean — operator-facing).
+FINDING_LABELS: dict[str, str] = {
+    "subtitle_narration_mismatch": "자막-나레이션 불일치",
+    "brand_name_misuse": "브랜드명/상호명 오기재",
+    "logo_text_corruption": "로고/화면 텍스트 깨짐",
+    "human_body_distortion": "인물/손/얼굴 왜곡",
+    "scene_industry_mismatch": "제품/서비스와 무관한 장면",
+    "exaggerated_claim": "과장·보장 표현",
+    "authority_claim_risk": "공식기관/법령/인증 표현 리스크",
+    "aggressive_cta": "CTA 과도함",
+    "unclear_message": "정보 전달 불가",
+    "pacing_issue": "영상 길이/씬 구성 이상",
+}
+
+# pacing_issue is quality-only; do not let it push the overall verdict to "hold".
+_QUALITY_ONLY_TYPES: set[str] = {"pacing_issue"}
+
+
+def _normalize_detailed_findings(raw: Any) -> list[dict[str, Any]]:
+    """Keep only entries with detected=true and valid type; coerce missing fields."""
+    if not isinstance(raw, list):
+        return []
+    out: list[dict[str, Any]] = []
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        if not item.get("detected"):
+            continue
+        ftype = item.get("type")
+        if ftype not in FINDING_LABELS:
+            continue
+        sev = item.get("severity")
+        if sev not in ("low", "medium", "high"):
+            sev = "medium"
+        out.append({
+            "type": ftype,
+            "label": FINDING_LABELS[ftype],
+            "detected": True,
+            "severity": sev,
+            "reason": (item.get("reason") or "").strip(),
+            "timeRange": item.get("timeRange") or None,
+            "evidence": item.get("evidence") or None,
+            "suggestion": item.get("suggestion") or None,
+        })
+    return out
+
+
+_SEVERITY_RANK = {"high": 3, "medium": 2, "low": 1}
+
+
+def _build_report(*, legacy_status: str, detailed_findings: list[dict]) -> dict[str, Any]:
+    """Derive operator-facing summary from legacy status + new findings.
+
+    Does NOT call an LLM and does NOT introduce a new judging stage — it is a
+    deterministic relabel of signals already produced upstream.
+    """
+    risk_findings = [f for f in detailed_findings if f["type"] not in _QUALITY_ONLY_TYPES]
+    high_findings = [f for f in risk_findings if f["severity"] == "high"]
+    medium_findings = [f for f in risk_findings if f["severity"] == "medium"]
+    major_count = len(high_findings) + len(medium_findings)
+
+    # Verdict mapping: never softens legacy status, only escalates when new
+    # high-severity findings appear that legacy logic would not have caught.
+    if legacy_status in ("retry", "fail"):
+        verdict = "hold"
+    elif legacy_status == "human_review":
+        verdict = "review"
+    else:  # legacy_status == 'pass' (or unknown — be conservative)
+        if len(high_findings) >= 2:
+            verdict = "hold"
+        elif high_findings:
+            verdict = "review"
+        elif medium_findings:
+            verdict = "review"
+        else:
+            verdict = "pass"
+
+    sorted_findings = sorted(
+        detailed_findings,
+        key=lambda f: (
+            -_SEVERITY_RANK.get(f["severity"], 0),
+            0 if f["type"] not in _QUALITY_ONLY_TYPES else 1,
+        ),
+    )
+    top_priority = sorted_findings[:3]
+
+    suggestions: list[str] = []
+    seen: set[str] = set()
+    for f in sorted_findings:
+        s = (f.get("suggestion") or "").strip()
+        if not s or s in seen:
+            continue
+        suggestions.append(s)
+        seen.add(s)
+        if len(suggestions) >= 5:
+            break
+
+    return {
+        "overallVerdict": verdict,
+        "verdictLabel": {"pass": "통과", "review": "검토 필요", "hold": "사용 보류"}[verdict],
+        "majorIssueCount": major_count,
+        "highIssueCount": len(high_findings),
+        "topPriority": top_priority,
+        "suggestions": suggestions,
+    }
+
+
 def _build_retry_prompt(
     client_info: dict,
     qa_context: dict,
@@ -118,6 +225,9 @@ def aggregate_qa_results(
            and f.get("severity") == "high"
     ]
 
+    detailed_findings = _normalize_detailed_findings(visual_analysis.get("detailedFindings"))
+    findings_by_type: dict[str, dict] = {f["type"]: f for f in detailed_findings}
+
     flags = {
         "detectedFloatingObjects": bool(visual_analysis.get("detectedFloatingObjects")) or bool(high_floating),
         "detectedSpatialDistortion": bool(visual_analysis.get("detectedSpatialDistortion")) or bool(high_distortion),
@@ -132,6 +242,33 @@ def aggregate_qa_results(
         "detectedWrongIndustry": bool(visual_analysis.get("detectedWrongIndustry")),
         "detectedVisualTextIssue": bool(visual_analysis.get("detectedVisualTextIssue")),
         "detectedAudioScriptMismatch": bool(visual_analysis.get("detectedAudioScriptMismatch")),
+    }
+
+    # New-category flags. Booleans from the model are accepted, and we also
+    # raise the flag whenever the structured detailedFindings array carries
+    # the matching type — so the UI stays consistent even if the LLM only
+    # populated one of the two surfaces.
+    enhanced_flags = {
+        "detectedSubtitleNarrationMismatch": bool(visual_analysis.get("detectedSubtitleNarrationMismatch"))
+            or ("subtitle_narration_mismatch" in findings_by_type),
+        "detectedBrandNameMisuse": bool(visual_analysis.get("detectedBrandNameMisuse"))
+            or ("brand_name_misuse" in findings_by_type),
+        "detectedLogoTextCorruption": bool(visual_analysis.get("detectedLogoTextCorruption"))
+            or ("logo_text_corruption" in findings_by_type),
+        "detectedHumanBodyDistortion": bool(visual_analysis.get("detectedHumanBodyDistortion"))
+            or ("human_body_distortion" in findings_by_type),
+        "detectedSceneIndustryMismatch": bool(visual_analysis.get("detectedSceneIndustryMismatch"))
+            or ("scene_industry_mismatch" in findings_by_type),
+        "detectedExaggeratedClaim": bool(visual_analysis.get("detectedExaggeratedClaim"))
+            or ("exaggerated_claim" in findings_by_type),
+        "detectedAuthorityClaimRisk": bool(visual_analysis.get("detectedAuthorityClaimRisk"))
+            or ("authority_claim_risk" in findings_by_type),
+        "detectedAggressiveCta": bool(visual_analysis.get("detectedAggressiveCta"))
+            or ("aggressive_cta" in findings_by_type),
+        "detectedUnclearMessage": bool(visual_analysis.get("detectedUnclearMessage"))
+            or ("unclear_message" in findings_by_type),
+        "detectedPacingIssue": bool(visual_analysis.get("detectedPacingIssue"))
+            or ("pacing_issue" in findings_by_type),
     }
 
     # Inject signal-derived findings
@@ -194,12 +331,15 @@ def aggregate_qa_results(
             "사람 검수가 필요합니다: " + "; ".join(bits) if bits else "사람 검수가 필요합니다."
         )
 
+    report = _build_report(legacy_status=status, detailed_findings=detailed_findings)
+
     return {
         "status": status,
         "score": score,
         "criticalIssues": critical,
         "warnings": warnings,
         **flags,
+        **enhanced_flags,
         "sttText": stt_result.get("text") or "",
         "sttLanguage": primary_lang,
         "sceneDiversityScore": sim_score,
@@ -209,6 +349,8 @@ def aggregate_qa_results(
         "audioLanguageSummary": audio_language,
         "visualQaSummary": visual_analysis.get("visualQaSummary") or [],
         "sceneQaSummary": visual_analysis.get("sceneQaSummary") or [],
+        "detailedFindings": detailed_findings,
+        "report": report,
         "retryPrompt": retry_prompt,
         "humanReviewReason": human_review_reason,
         "checkedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),

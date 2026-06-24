@@ -31,6 +31,44 @@ PRIMARY FOCUS — does the video look obviously wrong as a finished product?
 4) On-screen text broken, cropped, unreadable, or overlapping.
 5) Other-company brand names visible on screen.
 
+SECONDARY FOCUS — AI-generation-specific defects and marketing-claim risks.
+Report each item below as a structured entry inside `detailedFindings`. Use
+the schema in OUTPUT_SCHEMA. Only emit a finding when you can point to a real
+observation; do NOT fabricate evidence.
+
+A) subtitle_narration_mismatch — on-screen subtitle text differs from the
+   spoken narration in the STT. Minor wording variance = low. A meaning
+   change (different numbers, different product names, opposite claims) = high.
+B) brand_name_misuse — the client's brand / company / service name appears
+   misspelled, abbreviated wrong, or rendered as a similar-but-different
+   name. This is distinct from "other-company mixing" — here the name is
+   meant to be the client's but is rendered wrong.
+C) logo_text_corruption — logos look melted/smeared/duplicated, or on-screen
+   text reads as gibberish / glyph soup / unreadable foreign letters. This
+   is a stricter sub-case of on-screen text issue; flag here when it is
+   clearly an AI-generation artifact, not just a font/crop issue.
+D) human_body_distortion — wrong finger count, extra limbs, melted hands,
+   warped faces, distorted eyes/mouth — typical generative-AI body errors.
+E) scene_industry_mismatch — the WHOLE scene's setting/activity does not
+   match the client's industry/product/service (not a single stray object,
+   but the overall scene). e.g., a hospital interior in a coffee-shop ad.
+F) exaggerated_claim — narration or subtitles use unprovable absolutes:
+   "무조건", "100%", "반드시", "최고", "완벽", "억대 수익", "확실한 효과".
+   Cross-check client_info.forbiddenClaims; treat overlap as high severity.
+G) authority_claim_risk — claims of government / agency / certification
+   backing ("정부 인증", "공식 지정", "고용노동부 인정", "공단 공식",
+   "법정 필수", "국가 지원"). Mark as high unless the client info clearly
+   supports the claim (industry/services/promotionPoints).
+H) aggressive_cta — high-pressure CTA: "지금 안 하면 손해", "오늘만",
+   "무조건 신청", "당장 구매". Pure urgency words alone = medium; combined
+   with loss-framing / scarcity = high.
+I) unclear_message — the video has no voiceover and no subtitles, OR the
+   core message is so unclear that a viewer cannot tell what is being
+   promoted. low if just hard to follow; high if no message at all.
+J) pacing_issue — quality category, NOT legal risk: excessive repetition
+   of one scene, one scene held too long, OR a shorts-format video that
+   does not surface its hook in the early seconds. Severity always <= medium.
+
 You also receive PRE-COMPUTED SIGNALS (sceneDiversityScore, duplicateSceneRanges,
 audioLanguageSummary). Treat those as authoritative — do NOT recompute them.
 Use them only as context to corroborate other observations.
@@ -51,6 +89,17 @@ OUTPUT_SCHEMA = """OUTPUT a single JSON object, no markdown, no prose. Schema:
   "detectedWrongIndustry": bool,
   "detectedAudioScriptMismatch": bool,
 
+  "detectedSubtitleNarrationMismatch": bool,
+  "detectedBrandNameMisuse": bool,
+  "detectedLogoTextCorruption": bool,
+  "detectedHumanBodyDistortion": bool,
+  "detectedSceneIndustryMismatch": bool,
+  "detectedExaggeratedClaim": bool,
+  "detectedAuthorityClaimRisk": bool,
+  "detectedAggressiveCta": bool,
+  "detectedUnclearMessage": bool,
+  "detectedPacingIssue": bool,
+
   "visualAnomalyFrames": [
     {"offsetSec": number,
      "category": "floating_furniture"|"spatial_distortion"|"melting_shape"|"composition_artifact"|"broken_text"|"other",
@@ -69,6 +118,19 @@ OUTPUT_SCHEMA = """OUTPUT a single JSON object, no markdown, no prose. Schema:
     {"sceneIdx": number, "description": string, "expectedThemes": [string],
      "observedThemes": [string], "matchesIntent": bool|null, "note": string}
   ],
+
+  "detailedFindings": [
+    {"type": "subtitle_narration_mismatch"|"brand_name_misuse"|"logo_text_corruption"|
+             "human_body_distortion"|"scene_industry_mismatch"|"exaggerated_claim"|
+             "authority_claim_risk"|"aggressive_cta"|"unclear_message"|"pacing_issue",
+     "detected": bool,
+     "severity": "low"|"medium"|"high",
+     "reason": string,
+     "timeRange": string|null,
+     "evidence": string|null,
+     "suggestion": string|null}
+  ],
+
   "criticalIssues": [string],
   "warnings": [string]
 }
@@ -77,7 +139,17 @@ Notes:
 - Include one visualQaSummary entry per supplied frame.
 - If you cannot decide spatialOk for a frame, set spatialOk=null.
 - criticalIssues/warnings should be in Korean, since the operator reads them.
-- score per frame is optional (0..100); set null if uncertain."""
+- score per frame is optional (0..100); set null if uncertain.
+- detailedFindings: include an entry ONLY when detected=true. Each `reason`,
+  `evidence`, `suggestion` should be in Korean (operator reads them). `timeRange`
+  uses formats like "0:00-0:03" or "@1:24" or null if not localizable.
+- severity rules:
+    high   = legal/brand risk OR video should not be used as-is
+    medium = needs reviewer fix before publishing
+    low    = informational / quality nit (pacing_issue caps at medium)
+- The boolean `detected*` flags MUST agree with the corresponding entries in
+  detailedFindings: if a finding is present with detected=true, set the flag
+  true; otherwise false."""
 
 
 def _encode_image(path: Path) -> str:

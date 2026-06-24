@@ -608,6 +608,51 @@
         <div id="qa-flags" class="grid grid-cols-2 md:grid-cols-3 gap-2"></div>
       </div>
 
+      <!-- 상세 검수 리포트 (요약) -->
+      <div id="qa-report-section" class="hidden rounded-xl border border-indigo-900/40 bg-indigo-950/10 p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[10px] uppercase tracking-wider text-indigo-200/80">상세 검수 리포트</div>
+          <span id="qa-report-verdict" class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium"></span>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">전체 판정</div>
+            <div id="qa-report-verdict-label" class="mt-1 text-sm font-medium text-slate-100">-</div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">주요 이슈</div>
+            <div id="qa-report-major" class="mt-1 text-sm font-medium text-slate-100">0</div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">high 이슈</div>
+            <div id="qa-report-high" class="mt-1 text-sm font-medium text-slate-100">0</div>
+          </div>
+          <div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+            <div class="text-[10px] uppercase tracking-wider text-slate-500">상세 항목 수</div>
+            <div id="qa-report-total" class="mt-1 text-sm font-medium text-slate-100">0</div>
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">먼저 봐야 할 항목 (Top 3)</div>
+            <ul id="qa-report-top" class="space-y-1.5 text-sm text-slate-200"></ul>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">수정 제안 요약</div>
+            <ul id="qa-report-suggestions" class="space-y-1.5 text-sm text-slate-200"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- 고도화 검수 항목 (카테고리별 카드) -->
+      <div id="qa-enhanced-section" class="hidden rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="text-[10px] uppercase tracking-wider text-slate-500">고도화 검수 항목 (detailedFindings)</div>
+          <span class="text-[11px] text-slate-500">자동 감지 플래그와는 별도</span>
+        </div>
+        <div id="qa-enhanced-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+      </div>
+
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="rounded-xl border border-slate-800 bg-slate-900 p-5">
           <div class="text-[10px] uppercase tracking-wider text-slate-500 mb-2">치명적 문제 (criticalIssues)</div>
@@ -1880,6 +1925,105 @@
     }).join('');
   }
 
+  const FINDING_LABELS = {
+    subtitle_narration_mismatch: '자막-나레이션 불일치',
+    brand_name_misuse: '브랜드명/상호명 오기재',
+    logo_text_corruption: '로고/화면 텍스트 깨짐',
+    human_body_distortion: '인물/손/얼굴 왜곡',
+    scene_industry_mismatch: '제품/서비스와 무관한 장면',
+    exaggerated_claim: '과장·보장 표현',
+    authority_claim_risk: '공식기관/법령/인증 표현 리스크',
+    aggressive_cta: 'CTA 과도함',
+    unclear_message: '정보 전달 불가',
+    pacing_issue: '영상 길이/씬 구성 이상'
+  };
+
+  function verdictStyle(v){
+    if (v === 'hold') return 'bg-rose-950/40 text-rose-300 border-rose-800/60';
+    if (v === 'review') return 'bg-amber-950/40 text-amber-300 border-amber-800/60';
+    if (v === 'pass') return 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60';
+    return 'bg-slate-800 text-slate-300 border-slate-700';
+  }
+
+  function severityBadge(sev){
+    const cls = (sev === 'high') ? 'bg-rose-950/40 text-rose-300 border-rose-800/60'
+              : (sev === 'medium') ? 'bg-amber-950/40 text-amber-300 border-amber-800/60'
+              : 'bg-slate-950/60 text-slate-300 border-slate-700';
+    return `<span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium ${cls}">${escapeHtml(sev || '?')}</span>`;
+  }
+
+  function findingLabel(t){ return FINDING_LABELS[t] || t || '?'; }
+
+  function renderReport(data){
+    const section = document.getElementById('qa-report-section');
+    const enhSec = document.getElementById('qa-enhanced-section');
+    const report = data.report || {};
+    const findings = data.detailedFindings || [];
+
+    if (!findings.length && !report.overallVerdict) {
+      section.classList.add('hidden');
+      enhSec.classList.add('hidden');
+      return;
+    }
+    section.classList.remove('hidden');
+
+    const verdictBadge = document.getElementById('qa-report-verdict');
+    verdictBadge.textContent = report.verdictLabel || '-';
+    verdictBadge.className = 'inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ' + verdictStyle(report.overallVerdict);
+
+    document.getElementById('qa-report-verdict-label').textContent = report.verdictLabel || '-';
+    document.getElementById('qa-report-major').textContent = (report.majorIssueCount != null ? report.majorIssueCount : 0);
+    document.getElementById('qa-report-high').textContent = (report.highIssueCount != null ? report.highIssueCount : 0);
+    document.getElementById('qa-report-total').textContent = findings.length;
+
+    const topEl = document.getElementById('qa-report-top');
+    const top = report.topPriority || [];
+    if (!top.length) {
+      topEl.innerHTML = '<li class="text-slate-500 text-xs">우선 검토 항목 없음</li>';
+    } else {
+      topEl.innerHTML = top.map(f => {
+        const reason = f.reason ? ` — ${escapeHtml(f.reason)}` : '';
+        return `<li class="flex flex-wrap gap-2 items-start">
+          ${severityBadge(f.severity)}
+          <span class="text-slate-100">${escapeHtml(f.label || findingLabel(f.type))}</span>
+          <span class="text-slate-300">${reason}</span>
+        </li>`;
+      }).join('');
+    }
+
+    const suggEl = document.getElementById('qa-report-suggestions');
+    const suggs = report.suggestions || [];
+    if (!suggs.length) {
+      suggEl.innerHTML = '<li class="text-slate-500 text-xs">추가 제안 없음</li>';
+    } else {
+      suggEl.innerHTML = suggs.map(s => `<li class="flex gap-2"><span class="text-slate-500">→</span><span>${escapeHtml(s)}</span></li>`).join('');
+    }
+
+    enhSec.classList.remove('hidden');
+    const listEl = document.getElementById('qa-enhanced-list');
+    if (!findings.length) {
+      listEl.innerHTML = '<div class="text-slate-500 text-xs col-span-full">상세 항목 없음</div>';
+    } else {
+      listEl.innerHTML = findings.map(f => {
+        const label = escapeHtml(f.label || findingLabel(f.type));
+        const reason = f.reason ? `<div class="mt-2 text-sm text-slate-200 leading-relaxed">${escapeHtml(f.reason)}</div>` : '';
+        const tr = f.timeRange ? `<div class="text-[11px] text-slate-400">⏱ ${escapeHtml(f.timeRange)}</div>` : '';
+        const ev = f.evidence ? `<div class="mt-2 text-[11px] text-slate-400"><span class="text-slate-500">근거:</span> ${escapeHtml(f.evidence)}</div>` : '';
+        const sg = f.suggestion ? `<div class="mt-1 text-[11px] text-emerald-300/90"><span class="text-slate-500">제안:</span> ${escapeHtml(f.suggestion)}</div>` : '';
+        return `<div class="rounded-md border border-slate-800 bg-slate-950/60 p-3">
+          <div class="flex items-center justify-between gap-2">
+            <div class="text-sm font-medium text-slate-100">${label}</div>
+            ${severityBadge(f.severity)}
+          </div>
+          ${tr}
+          ${reason}
+          ${ev}
+          ${sg}
+        </div>`;
+      }).join('');
+    }
+  }
+
   function render(data){
     lastResult = data;
     const badge = document.getElementById('qa-status-badge');
@@ -1888,6 +2032,7 @@
     document.getElementById('qa-score').textContent = (data.score != null ? data.score : '-');
 
     renderFlags(data);
+    renderReport(data);
     renderList('qa-critical', data.criticalIssues, '치명적 문제 없음');
     renderList('qa-warnings', data.warnings, '경고 없음');
 
